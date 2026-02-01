@@ -12,7 +12,7 @@ def main():
     print("✅ Data loaded")
 
     report_lines = []
-    report_lines.append(f"Sridevi Night Analysis — {datetime.now().date()}")
+    report_lines.append(f"Kalyan Analysis — {datetime.now().date()}")
     report_lines.append("=" * 50)
 
     print("🔄 Analyzing cycle gaps...")
