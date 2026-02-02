@@ -4,7 +4,7 @@ from src.analysis.prediction_engine import get_top_picks
 from datetime import datetime
 import config
 
-REPORT_FILE = "reports/today_output.txt"
+REPORT_FILE = "reports/today_output.txt" 
 
 
 def main():
