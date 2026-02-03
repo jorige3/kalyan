@@ -1,6 +1,8 @@
-import pandas as pd
 from datetime import datetime, timedelta
-from typing import List, Dict, Tuple
+from typing import Dict, List
+
+import pandas as pd
+
 
 class HotColdAnalyzer:
     """

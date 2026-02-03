@@ -1,6 +1,6 @@
-import pandas as pd
 from pathlib import Path
 
+import pandas as pd
 
 DATA_FILE = Path("data/kalyan.csv")
 

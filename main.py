@@ -1,14 +1,15 @@
 import argparse
 import logging
-import pandas as pd
+import os
 from datetime import datetime
-from fpdf import FPDF # Using fpdf2 for PDF generation
+from typing import Dict, List
 
-from src.engine.kalyan_engine import KalyanEngine
+from fpdf import FPDF  # Using fpdf2 for PDF generation
+
+import config
 from src.analysis.hot_cold import HotColdAnalyzer
 from src.analysis.trend_window import TrendWindowAnalyzer
-import config
-from typing import List, Dict
+from src.engine.kalyan_engine import KalyanEngine
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -90,94 +91,81 @@ def main():
         hot_cold_analyzer = HotColdAnalyzer(df)
         trend_analyzer = TrendWindowAnalyzer(df)
 
-        report_lines = []
-        report_lines.append(f"Kalyan Analysis - {analysis_date.date()}")
-        report_lines.append("=" * 50)
+        # Perform analysis
+        analysis_results = {
+            "hot_digits": hot_cold_analyzer.get_hot_digits(),
+            "hot_jodis": hot_cold_analyzer.get_hot_jodis(),
+            "due_cycles": hot_cold_analyzer.get_due_cycles()['due_jodis'],
+            "exhausted_numbers": hot_cold_analyzer.get_exhausted_numbers()['exhausted_jodis'],
+            "trend_due_jodis": trend_analyzer.get_due_cycles_by_last_appearance()['due_jodis'],
+            "trend_exhausted_jodis": trend_analyzer.get_exhausted_numbers_by_streak()['exhausted_jodis'],
+        }
 
-        # --- Hot/Cold Analysis ---
-        logging.info("Performing Hot/Cold analysis...")
-        hot_digits = hot_cold_analyzer.get_hot_digits(config.HOT_LOOKBACK_DAYS, config.HOT_TOP_N)
-        cold_digits = hot_cold_analyzer.get_cold_digits(config.HOT_LOOKBACK_DAYS, config.EXHAUSTED_BOTTOM_N)
-        hot_jodis = hot_cold_analyzer.get_hot_jodis(config.HOT_LOOKBACK_DAYS, config.HOT_TOP_N)
-        cold_jodis = hot_cold_analyzer.get_cold_jodis(config.HOT_LOOKBACK_DAYS, config.EXHAUSTED_BOTTOM_N)
+        # Print analysis results in the new format
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        print(f"Kalyan Analysis — {current_date}")
 
-        report_lines.append(f"🔥 Hot Digits (last {config.HOT_LOOKBACK_DAYS} days): {', '.join(map(str, hot_digits))}")
-        report_lines.append(f"🧊 Cold Digits (last {config.HOT_LOOKBACK_DAYS} days): {', '.join(map(str, cold_digits))}")
-        report_lines.append(f"🔥 Hot Jodis (last {config.HOT_LOOKBACK_DAYS} days): {', '.join(hot_jodis)}")
-        report_lines.append(f"🧊 Cold Jodis (last {config.HOT_LOOKBACK_DAYS} days): {', '.join(cold_jodis)}")
-        report_lines.append("-" * 50)
+        hot_digit_display = analysis_results['hot_digits'][0] if analysis_results['hot_digits'] else 'N/A'
+        print(f"Hot Digit: 🔥 {hot_digit_display}")
 
-        # --- Due Cycles & Exhausted Numbers ---
-        logging.info("Identifying Due Cycles and Exhausted Numbers...")
-        due_cycles_data = trend_analyzer.get_due_cycles_by_last_appearance(config.DUE_THRESHOLD, config.CYCLE_GAP_MAX_DAYS)
-        due_jodis = due_cycles_data.get("due_jodis", [])
-        due_digits = due_cycles_data.get("due_digits", [])
+        hot_jodis_display = ', '.join(analysis_results['hot_jodis']) if analysis_results['hot_jodis'] else 'N/A'
+        print(f"🔥 Hot Jodis: {hot_jodis_display}")
 
-        exhausted_data = trend_analyzer.get_exhausted_numbers_by_streak(config.EXHAUSTED_LOOKBACK_DAYS, config.EXHAUSTED_GAP_THRESHOLD + 1) # +1 because threshold is 0
-        exhausted_jodis = exhausted_data.get("exhausted_jodis", [])
-        exhausted_digits = exhausted_data.get("exhausted_digits", [])
+        due_cycles_display = ', '.join(analysis_results['due_cycles']) if analysis_results['due_cycles'] else 'N/A'
+        print(f"🔄 Due Cycles (Hot/Cold): {due_cycles_display}")
 
-        report_lines.append(f"⏰ Due Jodis (not seen in {config.CYCLE_GAP_MAX_DAYS} days): {', '.join(due_jodis)}")
-        report_lines.append(f"⏰ Due Digits (not seen in {config.CYCLE_GAP_MAX_DAYS} days): {', '.join(map(str, due_digits))}")
-        report_lines.append(f"🚫 Exhausted Jodis (seen {config.EXHAUSTED_GAP_THRESHOLD + 1}+ times in {config.EXHAUSTED_LOOKBACK_DAYS} days): {', '.join(exhausted_jodis)}")
-        report_lines.append(f"🚫 Exhausted Digits (seen {config.EXHAUSTED_GAP_THRESHOLD + 1}+ times in {config.EXHAUSTED_LOOKBACK_DAYS} days): {', '.join(map(str, exhausted_digits))}")
-        report_lines.append("-" * 50)
+        exhausted_display = ', '.join(analysis_results['exhausted_numbers']) if analysis_results['exhausted_numbers'] else 'N/A'
+        print(f"🚫 Exhausted (Hot/Cold): {exhausted_display}")
 
-        # --- Top Picks (Simplified for now) ---
-        logging.info("Generating Top Picks...")
-        # This is a simplified logic. A real prediction engine would combine these factors intelligently.
-        potential_picks = list(set(hot_jodis + due_jodis))
-        if not potential_picks:
-            potential_picks = hot_jodis # Fallback if no due jodis
+        trend_due_jodis_display = ', '.join(analysis_results['trend_due_jodis']) if analysis_results['trend_due_jodis'] else 'N/A'
+        print(f"🔄 Due Cycles (Trend): {trend_due_jodis_display}")
 
-        # Filter out exhausted jodis from potential picks
-        final_picks = [p for p in potential_picks if p not in exhausted_jodis]
-        
-        # Limit to TOP_PICKS_COUNT
-        top_picks = final_picks[:config.TOP_PICKS_COUNT]
-        if not top_picks and df is not None and not df.empty:
-            # Fallback to top hot jodis if no other picks
-            top_picks = hot_jodis[:config.TOP_PICKS_COUNT]
-        elif not top_picks:
-            top_picks = ["N/A"] # No picks if no data
+        trend_exhausted_jodis_display = ', '.join(analysis_results['trend_exhausted_jodis']) if analysis_results['trend_exhausted_jodis'] else 'N/A'
+        print(f"🚫 Exhausted (Trend): {trend_exhausted_jodis_display}")
 
-        report_lines.append(f"🎯 TODAY'S TOP PICKS: {', '.join(top_picks)}")
-        report_lines.append("-" * 50)
+        # Get top picks
+        top_picks = engine.get_top_picks(analysis_results)
+        top_picks_display = ', '.join(top_picks) if top_picks else 'N/A'
+        print(f"🎯 TODAY'S TOP PICKS: {top_picks_display}")
 
-        # --- Monte Carlo Simulation for Confidence ---
-        if top_picks and top_picks != ["N/A"]:
-            confidence_scores = run_monte_carlo_simulation(top_picks)
-            report_lines.append("📊 Prediction Confidence (Monte Carlo):")
-            for pick, score in confidence_scores.items():
-                report_lines.append(f"  - {pick}: {score*100:.2f}%")
-            report_lines.append("-" * 50)
-
-        # --- Console Output ---
-        for line in report_lines:
-            print(line)
-
-        # --- PDF Report Generation ---
-        pdf = PDFReport()
-        pdf.alias_nb_pages()
-        pdf.add_page()
-        pdf.set_auto_page_break(auto=True, margin=15)
-
-        pdf.chapter_title(f"Kalyan Analysis Report - {analysis_date.date()}")
-        pdf.chapter_body("\n".join(report_lines))
-
-        # Example of adding a table (e.g., for digit frequencies)
-        if args.verbose:
-            digit_freq_data = hot_cold_analyzer.get_digit_frequency(config.HOT_LOOKBACK_DAYS)
-            if not digit_freq_data.empty:
-                pdf.chapter_title("Digit Frequencies (Last 30 Days)")
-                table_data = [['Digit', 'Frequency']]
-                for digit, freq in digit_freq_data.items():
-                    table_data.append([digit, freq])
-                pdf.add_table(table_data, col_width=30)
+        # Prepare report lines for PDF
+        report_lines = [
+            f"Kalyan Analysis — {current_date}",
+            f"Hot Digit: 🔥 {hot_digit_display}",
+            f"🔥 Hot Jodis: {hot_jodis_display}",
+            f"🔄 Due Cycles (Hot/Cold): {due_cycles_display}",
+            f"🚫 Exhausted (Hot/Cold): {exhausted_display}",
+            f"🔄 Due Cycles (Trend): {trend_due_jodis_display}",
+            f"🚫 Exhausted (Trend): {trend_exhausted_jodis_display}",
+            f"🎯 TODAY'S TOP PICKS: {top_picks_display}"
+        ]
 
         pdf_output_path = f"reports/kalyan_analysis_{analysis_date.strftime('%Y-%m-%d')}.pdf"
-        pdf.output(pdf_output_path)
-        logging.info(f"📄 PDF Report saved to {pdf_output_path}")
+
+        if os.path.exists(pdf_output_path):
+            logging.info(f"📄 PDF Report for {analysis_date.date()} already exists at {pdf_output_path}. Skipping generation.")
+        else:
+            # --- PDF Report Generation ---
+            pdf = PDFReport()
+            pdf.alias_nb_pages()
+            pdf.add_page()
+            pdf.set_auto_page_break(auto=True, margin=15)
+
+            pdf.chapter_title(f"Kalyan Analysis Report - {analysis_date.date()}")
+            pdf.chapter_body("\n".join(report_lines))
+
+            # Example of adding a table (e.g., for digit frequencies)
+            if args.verbose:
+                digit_freq_data = hot_cold_analyzer.get_digit_frequency(config.HOT_LOOKBACK_DAYS)
+                if not digit_freq_data.empty:
+                    pdf.chapter_title("Digit Frequencies (Last 30 Days)")
+                    table_data = [['Digit', 'Frequency']]
+                    for digit, freq in digit_freq_data.items():
+                        table_data.append([digit, freq])
+                    pdf.add_table(table_data, col_width=30)
+
+            pdf.output(pdf_output_path)
+            logging.info(f"📄 PDF Report saved to {pdf_output_path}")
 
     except Exception as e:
         logging.error(f"An error occurred during analysis: {e}", exc_info=True)

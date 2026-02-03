@@ -1,4 +1,3 @@
-import pandas as pd
 
 
 def analyze_jodi_frequency(df, days):

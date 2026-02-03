@@ -1,6 +1,9 @@
-import pandas as pd
 from datetime import timedelta
+
+import pandas as pd
+
 import config
+
 
 def calculate_cycle_gaps(df, column_name):
     """
