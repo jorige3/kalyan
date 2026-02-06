@@ -12,7 +12,7 @@ def calculate_cycle_gaps(df, column_name):
 
     Args:
         df (pd.DataFrame): DataFrame with a 'date' column and the target column.
-        column_name (str): The name of the column to analyze (e.g., 'open_panel', 'close_panel', 'jodi').
+        column_name (str): The name of the column to analyze (e.g., 'open_digit', 'close_digit', 'jodi').
 
     Returns:
         dict: A dictionary where keys are unique numbers and values are their current cycle gaps.
@@ -28,7 +28,7 @@ def calculate_cycle_gaps(df, column_name):
             if pd.notna(last_appearance):
                 gap = (latest_date - last_appearance).days
                 cycle_gaps[jodi_str] = gap
-    else: # For single digits in open_panel or close_panel
+    else: # For single digits in 'open' or 'close' columns
         for num in range(10):
             num_str = str(num)
             last_appearance = df[df[column_name].astype(str).str.contains(num_str)]['date'].max()
@@ -76,7 +76,7 @@ def identify_hot_numbers(df, column_name, lookback_days=config.HOT_LOOKBACK_DAYS
     if column_name == 'jodi':
         frequencies = recent_df['jodi'].value_counts()
     else:
-        # For single digits in open_panel or close_panel
+        # For single digits in 'open' or 'close' columns
         all_digits = pd.concat([recent_df[column_name].astype(str).str[0], 
                                 recent_df[column_name].astype(str).str[1]])
         frequencies = all_digits.value_counts()

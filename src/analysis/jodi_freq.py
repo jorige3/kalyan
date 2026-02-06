@@ -14,7 +14,7 @@ def analyze_jodi_frequency(df, days):
             - jodi_percentages (pd.Series): Percentages of each Jodi.
     """
     recent_df = df.tail(days)
-    jodi = recent_df['open_panel'].astype(str) + recent_df['close_panel'].astype(str)
+    jodi = recent_df['open'].astype(str) + recent_df['close'].astype(str)
     jodi_counts = jodi.value_counts()
     total_jodis = len(jodi)
     jodi_percentages = (jodi_counts / total_jodis) * 100

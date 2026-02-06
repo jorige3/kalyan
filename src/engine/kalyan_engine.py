@@ -27,14 +27,18 @@ class KalyanEngine:
             # Ensure column names are standardized
             df.columns = [col.strip().lower().replace(' ', '_') for col in df.columns]
             
-            # Expected columns: 'date', 'open', 'panel', 'close', 'jodi'
+            # Migration support: Rename 'panel' to 'sangam' if 'panel' exists and 'sangam' does not
+            if "panel" in df.columns and "sangam" not in df.columns:
+                df.rename(columns={"panel": "sangam"}, inplace=True)
+            
+            # Expected columns: 'date', 'open', 'sangam', 'close', 'jodi'
             # If 'jodi' is missing, create it from 'open' and 'close'
             if 'jodi' not in df.columns and 'open' in df.columns and 'close' in df.columns:
                 df['jodi'] = df['open'].astype(str) + df['close'].astype(str)
             
-            # If 'panel' is missing, create it from 'open' and 'close' (assuming single panel for simplicity)
-            if 'panel' not in df.columns and 'open' in df.columns and 'close' in df.columns:
-                df['panel'] = df['open'].astype(str) + '-' + df['close'].astype(str) # Placeholder, actual panel logic is complex
+            # If 'sangam' is missing, create it from 'open' and 'close' (assuming single sangam for simplicity)
+            if 'sangam' not in df.columns and 'open' in df.columns and 'close' in df.columns:
+                df['sangam'] = df['open'].astype(str) + '-' + df['close'].astype(str) # Placeholder, actual sangam logic is complex
 
             # Convert 'date' to datetime objects
             df['date'] = pd.to_datetime(df['date'])
@@ -76,19 +80,19 @@ class KalyanEngine:
                 
                 # Simple panel generation (e.g., sum of 3 digits)
                 panel_digits = sorted([self._generate_random_digit() for _ in range(3)])
-                panel = ''.join(map(str, panel_digits))
+                sangam = ''.join(map(str, panel_digits))
             else:
                 open_digit = ""
                 close_digit = ""
                 jodi = ""
-                panel = ""
+                sangam = ""
             
             data.append({
                 'date': d,
                 'open': open_digit,
                 'close': close_digit,
                 'jodi': jodi,
-                'panel': panel
+                'sangam': sangam
             })
         
         df = pd.DataFrame(data)
@@ -134,9 +138,9 @@ class KalyanEngine:
         close_digits = self.df['close'].dropna().astype(int).unique().tolist()
         return sorted(list(set(open_digits + close_digits)))
 
-    def get_all_panels(self) -> List[str]:
-        """Returns a list of all unique Panels present in the data."""
-        return self.df['panel'].dropna().unique().tolist()
+    def get_all_sangams(self) -> List[str]:
+        """Returns a list of all unique Sangams present in the data."""
+        return self.df['sangam'].dropna().unique().tolist()
 
     def get_top_picks(self, analysis_results: Dict[str, Any]) -> List[str]:
         """
