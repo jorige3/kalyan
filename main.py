@@ -18,7 +18,7 @@ REPORTS_DIR = BASE_DIR / "reports"
 REPORTS_DIR.mkdir(exist_ok=True)
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def format_list(items, limit=15):
     if not items:
@@ -217,6 +217,7 @@ def write_analysis_snapshot(
     }
 
     try:
+        logging.debug(f"Opening file for writing: {output_path}")
         with open(output_path, "w") as f:
             json.dump(snapshot, f, indent=2)
         logging.info(f"📊 Analysis snapshot saved to {output_path}")
@@ -278,6 +279,7 @@ def main():
 
         # --- Write Analysis Snapshot ---
         json_path = REPORTS_DIR / f"kalyan_analysis_{analysis_date.strftime('%Y-%m-%d')}.json"
+        logging.debug(f"Attempting to write analysis snapshot to: {json_path}")
         write_analysis_snapshot(
             output_path=json_path,
             analysis_date=analysis_date,
