@@ -44,6 +44,14 @@ class KalyanEngine:
             df['date'] = pd.to_datetime(df['date'])
             df = df.sort_values(by='date').reset_index(drop=True)
             
+            # Split 'sangam' into 'open_sangam' and 'close_sangam'
+            if 'sangam' in df.columns:
+                # Handle cases where sangam might be empty or malformed
+                # Use regex=False to avoid FutureWarning
+                split_sangam = df['sangam'].astype(str).str.split('-', expand=True)
+                df['open_sangam'] = split_sangam[0].fillna('')
+                df['close_sangam'] = split_sangam[1].fillna('')
+
             # Validate essential columns
             required_cols = ['date', 'open', 'close', 'jodi']
             if not all(col in df.columns for col in required_cols):
@@ -78,21 +86,28 @@ class KalyanEngine:
                 close_digit = str(self._generate_random_digit())
                 jodi = open_digit + close_digit
                 
-                # Simple panel generation (e.g., sum of 3 digits)
-                panel_digits = sorted([self._generate_random_digit() for _ in range(3)])
-                sangam = ''.join(map(str, panel_digits))
+                # Generate open_panel and close_panel (3 digits each)
+                open_panel_digits = sorted([self._generate_random_digit() for _ in range(3)])
+                open_panel = ''.join(map(str, open_panel_digits))
+                close_panel_digits = sorted([self._generate_random_digit() for _ in range(3)])
+                close_panel = ''.join(map(str, close_panel_digits))
+                sangam = f"{open_panel}-{close_panel}"
             else:
                 open_digit = ""
                 close_digit = ""
                 jodi = ""
                 sangam = ""
+                open_panel = ""
+                close_panel = ""
             
             data.append({
                 'date': d,
                 'open': open_digit,
                 'close': close_digit,
                 'jodi': jodi,
-                'sangam': sangam
+                'sangam': sangam,
+                'open_panel': open_panel,
+                'close_panel': close_panel
             })
         
         df = pd.DataFrame(data)

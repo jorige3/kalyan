@@ -7,9 +7,10 @@ from datetime import datetime, timezone
 from typing import Dict, List
 import hashlib
 import json
-from fpdf import FPDF  # Using fpdf2 for PDF generation
+from fpdf import FPDF, XPos, YPos  # Using fpdf2 for PDF generation
 from src.analysis.hot_cold import HotColdAnalyzer
 from src.analysis.trend_window import TrendWindowAnalyzer
+from src.analysis.sangam_analysis import SangamAnalyzer
 from src.engine.kalyan_engine import KalyanEngine
 from src.ux.text_templates import ReportText
 
@@ -84,6 +85,48 @@ class PDFReport(FPDF):
             self.ln()
         self.ln(5)
 
+    def add_picks_table(self, picks_data):
+        self.chapter_title("Top 5 Analytical Picks")
+        self.set_font('DejaVu', 'B', 10)
+        
+        # Column widths
+        col_widths = (20, 30, 20, 110) # Pick, Confidence, Score, Reasons
+        
+        # Headers
+        headers = ("Pick", "Confidence", "Score", "Reasons")
+        for i, header in enumerate(headers):
+            self.cell(col_widths[i], 7, header, 1, 0, 'C')
+        self.ln()
+
+        # Data
+        self.set_font('DejaVu', '', 9)
+        for pick in picks_data:
+            reasons = ", ".join(pick["reasons"])
+            row = [
+                str(pick["value"]),
+                str(pick["confidence"]),
+                f"{pick['score']:.2f}",
+                reasons,
+            ]
+            
+            # Truncate reasons if too long
+            if self.get_string_width(row[3]) > col_widths[3] - 2: # 2 for margin
+                reasons = ""
+                temp_reasons = row[3].split(", ")
+                for reason in temp_reasons:
+                    if self.get_string_width(reasons + reason + ", ") < col_widths[3] - 2:
+                        reasons += reason + ", "
+                    else:
+                        reasons += "..."
+                        break
+                row[3] = reasons.strip(", ")
+
+
+            for i, item in enumerate(row):
+                self.cell(col_widths[i], 7, item, 1, 0, 'C' if i < 3 else 'L')
+            self.ln()
+        self.ln(5)
+
         def format_list(items, limit=15):
             if not items:
                 return "N/A"
@@ -96,64 +139,94 @@ def generate_daily_summary_and_confidence(analysis_results: Dict) -> Dict:
     """
     Synthesizes raw analysis results into a high-level summary and confidence scores.
     """
-    # --- 1. Confidence Scoring for Jodis ---
-    all_jodis = set(analysis_results['hot_jodis']) | set(analysis_results['due_cycles']) | set(analysis_results['trend_due_jodis'])
+    # --- 1. Confidence Scoring for Jodis and Sangams ---
+    all_jodis_and_sangams = (
+        set(analysis_results['hot_jodis']) | 
+        set(analysis_results['due_cycles']) | 
+        set(analysis_results['trend_due_jodis']) |
+        set(analysis_results['hot_open_sangams']) |
+        set(analysis_results['hot_close_sangams']) |
+        set(analysis_results['due_open_sangams']) |
+        set(analysis_results['due_close_sangams'])
+    )
     
-    scored_jodis = []
-    for jodi in all_jodis:
+    scored_picks = []
+    for pick_value in all_jodis_and_sangams:
         score = 0
         reasons = []
+        pick_type = "jodi" # Default, will refine below
+
+        # Determine pick type and assign scores
+        if pick_value in analysis_results['hot_jodis']:
+            score += config.SCORING_WEIGHTS["HIGH_FREQUENCY_JODI"]
+            reasons.append("High Frequency Jodi")
+            pick_type = "jodi"
+        if pick_value in analysis_results['trend_due_jodis']:
+            score += config.SCORING_WEIGHTS["TREND_ALIGNED_JODI"]
+            reasons.append("Trend-Aligned Jodi")
+            pick_type = "jodi"
+        if pick_value in analysis_results['due_cycles']:
+            score += config.SCORING_WEIGHTS["EXTENDED_ABSENCE_JODI"]
+            reasons.append("Extended Absence Jodi")
+            pick_type = "jodi"
         
-        # Positive signals
-        if jodi in analysis_results['hot_jodis']:
-            score += 1
-            reasons.append("High Frequency")
-        if jodi in analysis_results['trend_due_jodis']:
-            score += 1
-            reasons.append("Trend-Aligned")
-        if jodi in analysis_results['due_cycles']:
-            score += 0.5
-            reasons.append("Extended Absence")
+        if pick_value in analysis_results['hot_open_sangams']:
+            score += config.SCORING_WEIGHTS["HIGH_FREQUENCY_OPEN_SANGAM"]
+            reasons.append("High Frequency Open Sangam")
+            pick_type = "open_sangam"
+        if pick_value in analysis_results['hot_close_sangams']:
+            score += config.SCORING_WEIGHTS["HIGH_FREQUENCY_CLOSE_SANGAM"]
+            reasons.append("High Frequency Close Sangam")
+            pick_type = "close_sangam"
+        if pick_value in analysis_results['due_open_sangams']:
+            score += config.SCORING_WEIGHTS["EXTENDED_ABSENCE_OPEN_SANGAM"]
+            reasons.append("Extended Absence Open Sangam")
+            pick_type = "open_sangam"
+        if pick_value in analysis_results['due_close_sangams']:
+            score += config.SCORING_WEIGHTS["EXTENDED_ABSENCE_CLOSE_SANGAM"]
+            reasons.append("Extended Absence Close Sangam")
+            pick_type = "close_sangam"
             
         # Negative signals (Contradictions)
-        if jodi in analysis_results['exhausted_numbers']:
-            score -= 2 # Heavy penalty for being exhausted
-            reasons.append("Exhausted Pattern")
+        if pick_value in analysis_results['exhausted_numbers']: # Exhausted applies to Jodis
+            score += config.SCORING_WEIGHTS["EXHAUSTED_PATTERN_PENALTY"]
+            reasons.append("Exhausted Pattern (Jodi)")
         
         confidence = ReportText.CONFIDENCE_LOW
-        if score >= 2:
+        if score >= config.CONFIDENCE_THRESHOLDS["HIGH"]:
             confidence = ReportText.CONFIDENCE_HIGH
-        elif score >= 1:
+        elif score >= config.CONFIDENCE_THRESHOLDS["MEDIUM"]:
             confidence = ReportText.CONFIDENCE_MEDIUM
 
-        scored_jodis.append({
-            "jodi": jodi,
+        scored_picks.append({
+            "value": pick_value,
+            "type": pick_type,
             "score": score,
             "confidence": confidence,
             "reasons": reasons
         })
 
     # Sort by score to find top picks
-    scored_jodis.sort(key=lambda x: x['score'], reverse=True)
+    scored_picks.sort(key=lambda x: x['score'], reverse=True)
     
     # --- 2. Determine Strongest Signals and Caution Areas ---
     strongest_signals_formatted = []
-    for j in scored_jodis:
-        if j['confidence'] == ReportText.CONFIDENCE_HIGH:
-            strongest_signals_formatted.append({"type": "jodi", "value": j['jodi'], "confidence": j['confidence']})
+    for p in scored_picks:
+        if p['confidence'] == ReportText.CONFIDENCE_HIGH:
+            strongest_signals_formatted.append({"type": p['type'], "value": p['value'], "confidence": p['confidence']})
     
     # Add hot digit as a strong signal
     if analysis_results['hot_digits']:
         strongest_signals_formatted.insert(0, {"type": "digit", "value": analysis_results['hot_digits'][0], "confidence": ReportText.CONFIDENCE_HIGH})
 
     caution_areas_formatted = []
-    for j in scored_jodis:
-        if "Exhausted Pattern" in j['reasons'] and j['score'] > 0:
-            caution_areas_formatted.append({"value": j['jodi'], "reason": "Contradictory signal"})
+    for p in scored_picks:
+        if "Exhausted Pattern (Jodi)" in p['reasons'] and p['score'] > 0:
+            caution_areas_formatted.append({"value": p['value'], "reason": "Contradictory signal"})
     
     # --- 3. Determine Market Mood and Confidence Score ---
-    num_high_confidence = len([j for j in scored_jodis if j['confidence'] == ReportText.CONFIDENCE_HIGH])
-    num_medium_confidence = len([j for j in scored_jodis if j['confidence'] == ReportText.CONFIDENCE_MEDIUM])
+    num_high_confidence = len([p for p in scored_picks if p['confidence'] == ReportText.CONFIDENCE_HIGH])
+    num_medium_confidence = len([p for p in scored_picks if p['confidence'] == ReportText.CONFIDENCE_MEDIUM])
     
     market_mood = "Quiet"
     if num_high_confidence > 0 or num_medium_confidence > 2:
@@ -175,7 +248,7 @@ def generate_daily_summary_and_confidence(analysis_results: Dict) -> Dict:
         "strongest_signals": strongest_signals_formatted[:3], # Top 3
         "caution_areas": caution_areas_formatted[:3],
         "analytical_confidence_score": confidence_score,
-        "top_picks_with_confidence": scored_jodis[:5] # Top 5 for detailed list
+        "top_picks_with_confidence": scored_picks[:5] # Top 5 for detailed list
     }
 
 
@@ -261,6 +334,7 @@ def main():
 
         hot_cold_analyzer = HotColdAnalyzer(df)
         trend_analyzer = TrendWindowAnalyzer(df)
+        sangam_analyzer = SangamAnalyzer(df)
 
         # Perform analysis
         analysis_results = {
@@ -270,12 +344,16 @@ def main():
             "exhausted_numbers": hot_cold_analyzer.get_exhausted_numbers()['exhausted_jodis'],
             "trend_due_jodis": trend_analyzer.get_due_cycles_by_last_appearance()['due_jodis'],
             "trend_exhausted_jodis": trend_analyzer.get_exhausted_numbers_by_streak()['exhausted_jodis'],
+            "hot_open_sangams": sangam_analyzer.get_hot_sangams()['hot_open_sangams'],
+            "hot_close_sangams": sangam_analyzer.get_hot_sangams()['hot_close_sangams'],
+            "due_open_sangams": sangam_analyzer.get_due_sangams()['due_open_sangams'],
+            "due_close_sangams": sangam_analyzer.get_due_sangams()['due_close_sangams'],
         }
 
         # --- Synthesize Analysis into a Summary ---
         summary_data = generate_daily_summary_and_confidence(analysis_results)
         top_picks_with_confidence = summary_data.get('top_picks_with_confidence', [])
-        top_picks_display = ', '.join([f"{pick['jodi']} ({pick['confidence']})" for pick in top_picks_with_confidence]) if top_picks_with_confidence else 'N/A'
+        top_picks_display = ', '.join([f"{pick['value']} ({pick['confidence']})" for pick in top_picks_with_confidence]) if top_picks_with_confidence else 'N/A'
 
         # --- Write Analysis Snapshot ---
         json_path = REPORTS_DIR / f"kalyan_analysis_{analysis_date.strftime('%Y-%m-%d')}.json"
@@ -290,7 +368,7 @@ def main():
                 "areas_for_caution": summary_data['caution_areas'],
             },
             ranked_picks=[
-                {"rank": i + 1, "value": pick['jodi'], "confidence": pick['confidence']}
+                {"rank": i + 1, "value": pick['value'], "confidence": pick['confidence']}
                 for i, pick in enumerate(top_picks_with_confidence)
             ],
             df_record_count=len(df),
@@ -326,6 +404,15 @@ def main():
             print(f"{ReportText.EXTENDED_ABSENCE_JODIS:<25}: {due_cycles_display}")
             exhausted_display = ', '.join(analysis_results['exhausted_numbers'][:5]) if analysis_results['exhausted_numbers'] else 'N/A'
             print(f"{ReportText.EXHAUSTED_JODIS:<25}: {exhausted_display}")
+            
+            hot_open_sangams_display = ', '.join(analysis_results['hot_open_sangams'][:5]) if analysis_results['hot_open_sangams'] else 'N/A'
+            print(f"{'Hot Open Sangams':<25}: {hot_open_sangams_display}")
+            hot_close_sangams_display = ', '.join(analysis_results['hot_close_sangams'][:5]) if analysis_results['hot_close_sangams'] else 'N/A'
+            print(f"{'Hot Close Sangams':<25}: {hot_close_sangams_display}")
+            due_open_sangams_display = ', '.join(analysis_results['due_open_sangams'][:5]) if analysis_results['due_open_sangams'] else 'N/A'
+            print(f"{'Due Open Sangams':<25}: {due_open_sangams_display}")
+            due_close_sangams_display = ', '.join(analysis_results['due_close_sangams'][:5]) if analysis_results['due_close_sangams'] else 'N/A'
+            print(f"{'Due Close Sangams':<25}: {due_close_sangams_display}")
             print("-" * 60)
 
         # --- PDF Report Generation ---
@@ -354,8 +441,7 @@ def main():
             pdf.summary_body(summary_body_pdf)
 
             # --- Top Picks Section ---
-            pdf.chapter_title(ReportText.PICKS_SECTION_TITLE)
-            pdf.chapter_body(f"Top 5 Analytical Picks: {top_picks_display}")
+            pdf.add_picks_table(top_picks_with_confidence)
 
             # --- Detailed Analysis Section (for verbose PDF) ---
             if args.verbose:

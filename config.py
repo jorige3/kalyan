@@ -14,3 +14,26 @@ TOP_PICKS_COUNT = 3 # Number of top picks to generate
 
 # Monte Carlo Simulation
 MONTE_CARLO_SIMULATIONS = 1000
+
+# --- Scoring Weights ---
+# Weights for different analytical signals to calculate confidence scores.
+# Higher values give more importance to that signal.
+SCORING_WEIGHTS = {
+    "HIGH_FREQUENCY_JODI": 1.5,          # From HotColdAnalyzer
+    "TREND_ALIGNED_JODI": 1.5,           # From TrendWindowAnalyzer
+    "EXTENDED_ABSENCE_JODI": 0.75,       # From HotColdAnalyzer (due_cycles)
+    
+    "HIGH_FREQUENCY_OPEN_SANGAM": 1.2,
+    "HIGH_FREQUENCY_CLOSE_SANGAM": 1.2,
+    "EXTENDED_ABSENCE_OPEN_SANGAM": 0.6,
+    "EXTENDED_ABSENCE_CLOSE_SANGAM": 0.6,
+    
+    "EXHAUSTED_PATTERN_PENALTY": -2.5    # Penalty for being in the exhausted list
+}
+
+# --- Confidence Thresholds ---
+# Score thresholds for classifying a pick's confidence level.
+CONFIDENCE_THRESHOLDS = {
+    "HIGH": 2.5,
+    "MEDIUM": 1.0,
+}
