@@ -50,13 +50,13 @@ class PDFReport(FPDF):
 
     def summary_body(self, body):
         """ Renders a body string with support for **bold** text. """
-        self.set_font('DejaVu', '', 10)
+        self.set_font('', '', 10) # Reset to normal before parsing
         parts = body.split('**')
         for i, part in enumerate(parts):
             if i % 2 == 1:  # Text inside **
                 self.set_font('', 'B')
                 self.write(5, part)
-                self.set_font('', '')
+                self.set_font('', '') # Reset to normal after bold
             else: # Regular text
                 self.write(5, part)
         self.ln()
