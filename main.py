@@ -3,8 +3,10 @@ import logging
 import os
 import config
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
+import hashlib
+import json
 from fpdf import FPDF  # Using fpdf2 for PDF generation
 from src.analysis.hot_cold import HotColdAnalyzer
 from src.analysis.trend_window import TrendWindowAnalyzer
@@ -17,6 +19,13 @@ REPORTS_DIR.mkdir(exist_ok=True)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def format_list(items, limit=15):
+    if not items:
+        return "N/A"
+    if len(items) > limit:
+        return ", ".join(items[:limit]) + f" ... (+{len(items)-limit} more)"
+    return ", ".join(items)
 
 class PDFReport(FPDF):
     def __init__(self, *args, **kwargs):
@@ -128,13 +137,20 @@ def generate_daily_summary_and_confidence(analysis_results: Dict) -> Dict:
     scored_jodis.sort(key=lambda x: x['score'], reverse=True)
     
     # --- 2. Determine Strongest Signals and Caution Areas ---
-    strongest_signals = [f"{j['jodi']} ({j['confidence']})" for j in scored_jodis if j['confidence'] == ReportText.CONFIDENCE_HIGH]
-    caution_areas = [f"{j['jodi']} (Contradictory)" for j in scored_jodis if "Exhausted Pattern" in j['reasons'] and j['score'] > 0]
+    strongest_signals_formatted = []
+    for j in scored_jodis:
+        if j['confidence'] == ReportText.CONFIDENCE_HIGH:
+            strongest_signals_formatted.append({"type": "jodi", "value": j['jodi'], "confidence": j['confidence']})
     
     # Add hot digit as a strong signal
     if analysis_results['hot_digits']:
-        strongest_signals.insert(0, f"Digit {analysis_results['hot_digits'][0]} (High Frequency)")
+        strongest_signals_formatted.insert(0, {"type": "digit", "value": analysis_results['hot_digits'][0], "confidence": ReportText.CONFIDENCE_HIGH})
 
+    caution_areas_formatted = []
+    for j in scored_jodis:
+        if "Exhausted Pattern" in j['reasons'] and j['score'] > 0:
+            caution_areas_formatted.append({"value": j['jodi'], "reason": "Contradictory signal"})
+    
     # --- 3. Determine Market Mood and Confidence Score ---
     num_high_confidence = len([j for j in scored_jodis if j['confidence'] == ReportText.CONFIDENCE_HIGH])
     num_medium_confidence = len([j for j in scored_jodis if j['confidence'] == ReportText.CONFIDENCE_MEDIUM])
@@ -156,11 +172,56 @@ def generate_daily_summary_and_confidence(analysis_results: Dict) -> Dict:
 
     return {
         "market_mood": market_mood,
-        "strongest_signals": strongest_signals[:3], # Top 3
-        "caution_areas": caution_areas[:3],
+        "strongest_signals": strongest_signals_formatted[:3], # Top 3
+        "caution_areas": caution_areas_formatted[:3],
         "analytical_confidence_score": confidence_score,
         "top_picks_with_confidence": scored_jodis[:5] # Top 5 for detailed list
     }
+
+
+def hash_file(path: str) -> str:
+    """Generates a SHA256 hash of a file's content."""
+    h = hashlib.sha256()
+    try:
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                h.update(chunk)
+    except FileNotFoundError:
+        return "FILE_NOT_FOUND"
+    return h.hexdigest()
+
+def write_analysis_snapshot(
+    output_path: Path,
+    analysis_date: datetime,
+    summary: Dict,
+    ranked_picks: List[Dict],
+    df_record_count: int,
+    csv_path: Path,
+) -> None:
+    """
+    Writes a JSON snapshot of the analysis results for reproducibility.
+    """
+    snapshot = {
+        "analysis_date": analysis_date.strftime("%Y-%m-%d"),
+        "engine_version": ReportText.VERSION, # Using ReportText.VERSION as config.__version__ is not defined
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+
+        "data": {
+            "source_file": str(csv_path),
+            "record_count": df_record_count,
+            "sha256": hash_file(str(csv_path)),
+        },
+
+        "daily_summary": summary,
+        "ranked_picks": ranked_picks,
+    }
+
+    try:
+        with open(output_path, "w") as f:
+            json.dump(snapshot, f, indent=2)
+        logging.info(f"📊 Analysis snapshot saved to {output_path}")
+    except IOError as e:
+        logging.error(f"Failed to write analysis snapshot to {output_path}: {e}")
 
 
 def run_monte_carlo_simulation(predictions: List[str], num_simulations: int = 1000) -> Dict[str, float]:
@@ -215,6 +276,25 @@ def main():
         top_picks_with_confidence = summary_data.get('top_picks_with_confidence', [])
         top_picks_display = ', '.join([f"{pick['jodi']} ({pick['confidence']})" for pick in top_picks_with_confidence]) if top_picks_with_confidence else 'N/A'
 
+        # --- Write Analysis Snapshot ---
+        json_path = REPORTS_DIR / f"kalyan_analysis_{analysis_date.strftime('%Y-%m-%d')}.json"
+        write_analysis_snapshot(
+            output_path=json_path,
+            analysis_date=analysis_date,
+            summary={
+                "market_mood": summary_data['market_mood'],
+                "confidence_score": summary_data['analytical_confidence_score'],
+                "strongest_signals": summary_data['strongest_signals'],
+                "areas_for_caution": summary_data['caution_areas'],
+            },
+            ranked_picks=[
+                {"rank": i + 1, "value": pick['jodi'], "confidence": pick['confidence']}
+                for i, pick in enumerate(top_picks_with_confidence)
+            ],
+            df_record_count=len(df),
+            csv_path=Path(args.csv),
+        )
+
         # --- Console Output Section ---
         print("=" * 60)
         print(f"  {ReportText.CONSOLE_HEADER_TITLE} | Date: {analysis_date.strftime(ReportText.DATE_FORMAT)} | v{ReportText.VERSION}")
@@ -223,8 +303,12 @@ def main():
         # --- New Summary Output ---
         print(f"{ReportText.SUMMARY_MOOD:<28}: {summary_data['market_mood']}")
         print(f"{ReportText.SUMMARY_CONFIDENCE:<28}: {summary_data['analytical_confidence_score']}/10")
-        print(f"{ReportText.SUMMARY_STRONGEST_SIGNALS:<28}: {', '.join(summary_data['strongest_signals']) if summary_data['strongest_signals'] else 'N/A'}")
-        print(f"{ReportText.SUMMARY_CAUTION_AREAS:<28}: {', '.join(summary_data['caution_areas']) if summary_data['caution_areas'] else 'None'}")
+        
+        strongest_signals_console = [f"{s['value']} ({s['confidence']})" for s in summary_data['strongest_signals']]
+        print(f"{ReportText.SUMMARY_STRONGEST_SIGNALS:<28}: {', '.join(strongest_signals_console) if strongest_signals_console else 'N/A'}")
+        
+        caution_areas_console = [f"{s['value']} ({s['reason']})" for s in summary_data['caution_areas']]
+        print(f"{ReportText.SUMMARY_CAUTION_AREAS:<28}: {', '.join(caution_areas_console) if caution_areas_console else 'None'}")
 
         print("-" * 60)
         print(f"{ReportText.PICKS_SECTION_TITLE:<28}: {top_picks_display}")
@@ -255,13 +339,17 @@ def main():
 
             # --- Daily Summary Section ---
             pdf.chapter_title(ReportText.SUMMARY_SECTION_TITLE)
-            summary_body = (
+            
+            strongest_signals_pdf = [f"{s['value']} ({s['confidence']})" for s in summary_data['strongest_signals']]
+            caution_areas_pdf = [f"{s['value']} ({s['reason']})" for s in summary_data['caution_areas']]
+
+            summary_body_pdf = (
                 f"**{ReportText.SUMMARY_MOOD}:** {summary_data['market_mood']}\n"
                 f"**{ReportText.SUMMARY_CONFIDENCE}:** {summary_data['analytical_confidence_score']}/10\n"
-                f"**{ReportText.SUMMARY_STRONGEST_SIGNALS}:** {', '.join(summary_data['strongest_signals']) if summary_data['strongest_signals'] else 'N/A'}\n"
-                f"**{ReportText.SUMMARY_CAUTION_AREAS}:** {', '.join(summary_data['caution_areas']) if summary_data['caution_areas'] else 'None'}"
+                f"**{ReportText.SUMMARY_STRONGEST_SIGNALS}:** {', '.join(strongest_signals_pdf) if strongest_signals_pdf else 'N/A'}\n"
+                f"**{ReportText.SUMMARY_CAUTION_AREAS}:** {', '.join(caution_areas_pdf) if caution_areas_pdf else 'None'}"
             )
-            pdf.summary_body(summary_body)
+            pdf.summary_body(summary_body_pdf)
 
             # --- Top Picks Section ---
             pdf.chapter_title(ReportText.PICKS_SECTION_TITLE)
