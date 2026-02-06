@@ -1,9 +1,8 @@
-venv/
+# Python junk
 __pycache__/
-*.csv
-*.pdf
-*.xlsx
-*.log
 *.pyc
-*.pyo
-*.DS_Store
+
+# Generated outputs
+reports/
+data/*.csv
+
