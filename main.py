@@ -205,6 +205,8 @@ def main():
     parser.add_argument("--date", default=datetime.now().strftime("%Y-%m-%d"))
     parser.add_argument("--csv", default="data/kalyan.csv")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--no-validate", action="store_true")
+    parser.add_argument("--validation-log", default="reports/validation_log_v2.csv")
     args = parser.parse_args()
 
     analysis_date = datetime.strptime(args.date, "%Y-%m-%d")
@@ -268,6 +270,15 @@ def main():
         pdf.add_picks_table(summary["top_picks_with_confidence"])
         pdf.output(pdf_path)
         logging.info(f"📄 PDF saved to {pdf_path}")
+
+    if not args.no_validate:
+        from src.analysis.validation import validate_latest_game
+
+        validation_log = Path(args.validation_log)
+        if not validation_log.is_absolute():
+            validation_log = BASE_DIR / validation_log
+
+        validate_latest_game(df, REPORTS_DIR, validation_log)
 
 
 if __name__ == "__main__":

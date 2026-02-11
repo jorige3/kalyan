@@ -11,7 +11,7 @@ The project has been transformed into a "strong output" powerhouse as requested.
     *   **`src/analysis/hot_cold.py`**: Rewritten to perform hot/cold digit and jodi analysis, including frequency calculations and identification of due cycles and exhausted numbers.
     *   **`src/analysis/trend_window.py`**: Rewritten to analyze trends and cycles using a sliding window approach, also including due cycle and exhausted number identification.
     *   **`main.py`**: Rewritten to orchestrate the analysis, integrate `KalyanEngine`, `HotColdAnalyzer`, and `TrendWindowAnalyzer`. It now includes:
-        *   `argparse` for CLI inputs (`--date`, `--csv`, `--verbose`).
+        *   `argparse` for CLI inputs (`--date`, `--csv`, `--verbose`, `--no-validate`).
         *   Basic PDF report generation using `fpdf2`, with Unicode font support (`DejaVuSans.ttf` and `DejaVuSansCondensed-Bold.ttf`) to display emojis and special characters.
         *   A placeholder for Monte Carlo simulations to assess prediction confidence.
         *   Improved error handling and logging.
@@ -29,6 +29,7 @@ The system now provides:
 *   Robust data loading with dummy data fallback.
 *   Modular analysis for hot/cold numbers, due cycles, and exhausted numbers.
 *   CLI-driven execution.
+*   Calendar-aware validation that skips Sundays and logs to `reports/validation_log_v2.csv` by default (disable via `--no-validate`).
 *   A PDF report with basic formatting, including Unicode support for emojis (though some specific emoji glyphs might still be missing from the chosen font).
 *   A placeholder for Monte Carlo simulations.
 
