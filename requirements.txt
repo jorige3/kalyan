@@ -3,4 +3,6 @@ pandas==3.0.0
 python-dateutil==2.9.0.post0
 ruff==0.14.14
 six==1.17.0
-fpdf2==2.7.9 # Added for PDF generation
+fpdf2==2.7.9 # Added for PDF generationbeautifulsoup4
+lxml
+requests
