@@ -1,170 +1,112 @@
+import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
-
 import pandas as pd
+from pathlib import Path
+import random
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class KalyanEngine:
     """
-    Core engine for Kalyan Matka chart parsing, data preprocessing, and analysis integration.
-    Handles loading, cleaning, and structuring historical Kalyan data.
+    Handles data loading, preprocessing, and dummy data generation for Kalyan Matka analysis.
+    Ensures data consistency and provides historical data.
     """
 
-    def __init__(self, data_path: str = 'data/kalyan.csv'):
-        self.data_path = data_path
-        self.df = self._load_and_preprocess_data()
-        if self.df is None:
-            # Fallback to an empty DataFrame if it somehow ends up None
-            self.df = pd.DataFrame()
+    def __init__(self, csv_path: str):
+        self.csv_path = Path(csv_path)
+        self.df = self._load_or_create_data()
 
-    def _load_and_preprocess_data(self) -> pd.DataFrame:
+    def _generate_dummy_data(self, start_date: datetime, num_days: int = 30) -> pd.DataFrame:
         """
-        Loads Kalyan data from a CSV file, handles missing files by generating dummy data,
-        and preprocesses it.
+        Generates dummy data for the specified number of days starting from start_date.
+        Ensures 'jodi' is a string or None for Sundays.
         """
-        try:
-            df = pd.read_csv(self.data_path)
-            # Ensure column names are standardized
-            df.columns = [col.strip().lower().replace(' ', '_') for col in df.columns]
-            
-            # Migration support: Rename 'panel' to 'sangam' if 'panel' exists and 'sangam' does not
-            if "panel" in df.columns and "sangam" not in df.columns:
-                df.rename(columns={"panel": "sangam"}, inplace=True)
-            
-            # Expected columns: 'date', 'open', 'sangam', 'close', 'jodi'
-            # If 'jodi' is missing, create it from 'open' and 'close'
-            if 'jodi' not in df.columns and 'open' in df.columns and 'close' in df.columns:
-                df['jodi'] = df['open'].astype(str) + df['close'].astype(str)
-            
-            # If 'sangam' is missing, create it from 'open' and 'close' (assuming single sangam for simplicity)
-            if 'sangam' not in df.columns and 'open' in df.columns and 'close' in df.columns:
-                df['sangam'] = df['open'].astype(str) + '-' + df['close'].astype(str) # Placeholder, actual sangam logic is complex
-
-            # Convert 'date' to datetime objects
-            df['date'] = pd.to_datetime(df['date'])
-            df = df.sort_values(by='date').reset_index(drop=True)
-            
-            # Split 'sangam' into 'open_sangam' and 'close_sangam'
-            if 'sangam' in df.columns:
-                # Handle cases where sangam might be empty or malformed
-                # Use regex=False to avoid FutureWarning
-                split_sangam = df['sangam'].astype(str).str.split('-', expand=True)
-                df['open_sangam'] = split_sangam[0].fillna('')
-                df['close_sangam'] = split_sangam[1].fillna('')
-
-            # Validate essential columns
-            required_cols = ['date', 'open', 'close', 'jodi']
-            if not all(col in df.columns for col in required_cols):
-                raise ValueError(f"Missing one or more required columns: {required_cols}")
-
-            # Convert 'jodi' to string type to ensure consistency
-            df['jodi'] = df['jodi'].astype(str)
-            return df
-        except FileNotFoundError:
-            print(f"Warning: Data file not found at {self.data_path}. Generating dummy data.")
-            dummy_df = self._generate_dummy_data()
-            return dummy_df
-        except Exception as e:
-            print(f"Error loading or preprocessing data: {e}")
-            print("Attempting to generate dummy data as a fallback.")
-            try:
-                dummy_df = self._generate_dummy_data()
-                return dummy_df
-            except Exception as dummy_e:
-                print(f"Error generating dummy data: {dummy_e}")
-                return pd.DataFrame() # Return empty DataFrame on critical failure
-
-    def _generate_dummy_data(self, start_date: str = '2025-01-01', num_days: int = 365) -> pd.DataFrame:
-        """
-        Generates dummy Kalyan data for demonstration and testing purposes.
-        """
-        dates = [datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=i) for i in range(num_days)]
+        dates = [start_date - timedelta(days=i) for i in range(num_days -1 , -1, -1)] # Generate dates in ascending order
+        
         data = []
         for d in dates:
-            if d.weekday() < 6: # Assuming no results on Sunday
-                open_digit = str(self._generate_random_digit())
-                close_digit = str(self._generate_random_digit())
-                jodi = open_digit + close_digit
-                
-                # Generate open_panel and close_panel (3 digits each)
-                open_panel_digits = sorted([self._generate_random_digit() for _ in range(3)])
-                open_panel = ''.join(map(str, open_panel_digits))
-                close_panel_digits = sorted([self._generate_random_digit() for _ in range(3)])
-                close_panel = ''.join(map(str, close_panel_digits))
-                sangam = f"{open_panel}-{close_panel}"
-            else:
-                open_digit = ""
-                close_digit = ""
-                jodi = ""
-                sangam = ""
-                open_panel = ""
-                close_panel = ""
+            open_digit = None
+            close_digit = None
+            jodi = None
+
+            # Exclude Sundays
+            if d.weekday() != 6:  # Monday is 0, Sunday is 6
+                # Generate random digits (0-9)
+                open_digit = random.randint(0, 9)
+                close_digit = random.randint(0, 9)
+                jodi = f"{open_digit}{close_digit}"
             
             data.append({
-                'date': d,
-                'open': open_digit,
-                'close': close_digit,
-                'jodi': jodi,
-                'sangam': sangam,
-                'open_panel': open_panel,
-                'close_panel': close_panel
+                "date": d.strftime("%Y-%m-%d"),
+                "open": open_digit,
+                "close": close_digit,
+                "jodi": jodi
             })
-        
+
         df = pd.DataFrame(data)
-        # Save dummy data to the expected path for future runs
-        try:
-            df.to_csv(self.data_path, index=False)
-            print(f"Dummy data generated and saved to {self.data_path}")
-        except Exception as e:
-            print(f"Could not save dummy data to {self.data_path}: {e}")
+        df['date'] = pd.to_datetime(df['date'])
+        
+        # Ensure 'open' and 'close' are Int64 (to allow None, which becomes NaN then Int64 with pd.NA)
+        # Convert explicit None to pd.NA for proper handling in pandas integer columns
+        df['open'] = df['open'].apply(lambda x: pd.NA if x is None else x).astype('Int64')
+        df['close'] = df['close'].apply(lambda x: pd.NA if x is None else x).astype('Int64')
+        
+        # Handle 'jodi' as string, converting None to actual None object (which pandas stores as NaN for object dtype)
+        df['jodi'] = df['jodi'].apply(lambda x: None if x is None else str(x))
+
         return df
 
-    def _generate_random_digit(self) -> int:
-        """Generates a random digit between 0 and 9."""
-        return pd.Series([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).sample(1).iloc[0]
+    def _load_or_create_data(self) -> pd.DataFrame:
+        """
+        Loads data from the CSV path or generates dummy data if the file is not found,
+        is empty, or has insufficient data.
+        """
+        if self.csv_path.exists() and self.csv_path.stat().st_size > 0:
+            try:
+                # Read 'jodi' as string to prevent pandas from inferring numeric type
+                df = pd.read_csv(self.csv_path, dtype={'jodi': str})
+                df['date'] = pd.to_datetime(df['date'])
+                df = df.sort_values(by='date').reset_index(drop=True)
+
+                if 'open' in df.columns:
+                    df['open'] = pd.to_numeric(df['open'], errors='coerce').astype('Int64')
+                if 'close' in df.columns:
+                    df['close'] = pd.to_numeric(df['close'], errors='coerce').astype('Int64')
+                
+                # Filter out rows with NA date or if 'jodi' is entirely missing
+                df = df.dropna(subset=['date'])
+                if 'jodi' in df.columns:
+                    df = df.dropna(subset=['jodi'])
+
+                if not df.empty and len(df) >= 7: # Ensure at least 7 days of data
+                    logging.info(f"Loaded {len(df)} records from {self.csv_path}")
+                    return df
+                else:
+                    logging.warning(
+                        f"Insufficient data in {self.csv_path}. Generating dummy data."
+                    )
+            except (pd.errors.EmptyDataError, pd.errors.ParserError, KeyError) as e:
+                logging.error(f"Error reading {self.csv_path}: {e}. Generating dummy data.")
+            except Exception as e:
+                logging.error(f"An unexpected error occurred: {e}. Generating dummy data.")
+        else:
+            logging.warning(f"CSV file not found or is empty at {self.csv_path}. Generating dummy data.")
+
+        # If data loading fails or is insufficient, generate dummy data
+        dummy_df = self._generate_dummy_data(datetime.now())
+        dummy_df.to_csv(self.csv_path, index=False) # Save dummy data
+        logging.info(f"Generated and saved dummy data to {self.csv_path}")
+        return dummy_df
 
     def get_historical_data(self) -> pd.DataFrame:
-        """Returns the preprocessed historical data."""
+        """
+        Returns the processed historical data.
+        """
         return self.df
 
-    def get_latest_data(self, n: int = 1) -> pd.DataFrame:
-        """Returns the latest N entries from the historical data."""
-        return self.df.tail(n)
-
-    def get_data_for_date(self, target_date: datetime) -> pd.DataFrame:
-        """Returns data for a specific date."""
-        return self.df[self.df['date'] == target_date]
-
-    def get_data_up_to_date(self, target_date: datetime) -> pd.DataFrame:
-        """Returns data up to a specific date."""
-        return self.df[self.df['date'] <= target_date]
-
-    def get_data_since_date(self, target_date: datetime) -> pd.DataFrame:
-        """Returns data since a specific date."""
-        return self.df[self.df['date'] >= target_date]
-
     def get_all_jodis(self) -> List[str]:
-        """Returns a list of all unique Jodis present in the data."""
-        return self.df['jodi'].dropna().unique().tolist()
-
-    def get_all_digits(self) -> List[int]:
-        """Returns a list of all unique single digits (open/close) present in the data."""
-        open_digits = self.df['open'].dropna().astype(int).unique().tolist()
-        close_digits = self.df['close'].dropna().astype(int).unique().tolist()
-        return sorted(list(set(open_digits + close_digits)))
-
-    def get_all_sangams(self) -> List[str]:
-        """Returns a list of all unique Sangams present in the data."""
-        return self.df['sangam'].dropna().unique().tolist()
-
-    def get_top_picks(self, analysis_results: Dict[str, Any]) -> List[str]:
         """
-        Placeholder for generating top picks based on analysis results.
-        Currently returns dummy values.
+        Returns a list of all possible Kalyan jodis (00-99).
         """
-        # In a real implementation, this would use analysis_results
-        # (hot/cold digits/jodis, due cycles, exhausted numbers)
-        # to apply a weighted scoring system and generate actual predictions.
-        
-        # For now, returning some dummy top picks
-        return ["35", "59", "76"]
+        return [f"{i}{j}" for i in range(10) for j in range(10)]
