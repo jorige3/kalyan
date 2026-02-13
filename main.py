@@ -1,20 +1,19 @@
 import argparse
-import logging
-import os
-import json
 import hashlib
-from pathlib import Path
+import json
+import logging
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List
 
 from fpdf import FPDF, XPos, YPos
 
 import config
-from src.engine.kalyan_engine import KalyanEngine
-from src.analysis.hot_cold import HotColdAnalyzer
-from src.analysis.trend_window import TrendWindowAnalyzer
-from src.analysis.sangam_analysis import SangamAnalyzer
 from src.analysis.explainability import explain_pick
+from src.analysis.hot_cold import HotColdAnalyzer
+from src.analysis.sangam_analysis import SangamAnalyzer
+from src.analysis.trend_window import TrendWindowAnalyzer
+from src.engine.kalyan_engine import KalyanEngine
 from src.ux.text_templates import ReportText
 
 # -------------------------------------------------------------------
@@ -219,17 +218,29 @@ def main():
         logging.error("No data available.")
         return
 
-    analysis_results = {
-        "hot_digits": HotColdAnalyzer(df).get_hot_digits(),
-        "hot_jodis": HotColdAnalyzer(df).get_hot_jodis(),
-        "due_jodis": HotColdAnalyzer(df).get_due_cycles()["due_jodis"],
-        "exhausted_jodis": HotColdAnalyzer(df).get_exhausted_numbers()["exhausted_jodis"],
-        "trend_due_jodis": TrendWindowAnalyzer(df).get_due_cycles_by_last_appearance()["due_jodis"],
-        "hot_open_sangams": SangamAnalyzer(df).get_hot_sangams()["hot_open_sangams"],
-        "hot_close_sangams": SangamAnalyzer(df).get_hot_sangams()["hot_close_sangams"],
-        "due_open_sangams": SangamAnalyzer(df).get_due_sangams()["due_open_sangams"],
-        "due_close_sangams": SangamAnalyzer(df).get_due_sangams()["due_close_sangams"],
+    # Dynamically run the analysis pipeline from config
+    analysis_results = {}
+    analyzer_classes = {
+        "HotColdAnalyzer": HotColdAnalyzer,
+        "TrendWindowAnalyzer": TrendWindowAnalyzer,
+        "SangamAnalyzer": SangamAnalyzer,
     }
+
+    for step in config.ANALYSIS_PIPELINE:
+        analyzer_name = step["analyzer"]
+        method_name = step["method"]
+        
+        if analyzer_name in analyzer_classes:
+            analyzer_instance = analyzer_classes[analyzer_name](df)
+            method_to_call = getattr(analyzer_instance, method_name)
+            result = method_to_call(*step.get("args", []))
+            
+            if "result_key" in step:
+                analysis_results[step["name"]] = result[step["result_key"]]
+            else:
+                analysis_results[step["name"]] = result
+        else:
+            logging.warning(f"Analyzer '{analyzer_name}' not found in configuration.")
 
     summary = generate_daily_summary_and_confidence(analysis_results)
 

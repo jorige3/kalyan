@@ -15,6 +15,22 @@ TOP_PICKS_COUNT = 3 # Number of top picks to generate
 # Monte Carlo Simulation
 MONTE_CARLO_SIMULATIONS = 1000
 
+# --- Analysis Pipeline ---
+# Defines the sequence of analysis steps to be executed.
+# This allows for easy addition, removal, or reordering of analyses.
+ANALYSIS_PIPELINE = [
+    {"name": "hot_digits", "analyzer": "HotColdAnalyzer", "method": "get_hot_digits", "args": []},
+    {"name": "hot_jodis", "analyzer": "HotColdAnalyzer", "method": "get_hot_jodis", "args": []},
+    {"name": "due_jodis", "analyzer": "HotColdAnalyzer", "method": "get_due_cycles", "result_key": "due_jodis"},
+    {"name": "exhausted_jodis", "analyzer": "HotColdAnalyzer", "method": "get_exhausted_numbers", "result_key": "exhausted_jodis"},
+    {"name": "trend_due_jodis", "analyzer": "TrendWindowAnalyzer", "method": "get_due_cycles_by_last_appearance", "result_key": "due_jodis"},
+    {"name": "hot_open_sangams", "analyzer": "SangamAnalyzer", "method": "get_hot_sangams", "result_key": "hot_open_sangams"},
+    {"name": "hot_close_sangams", "analyzer": "SangamAnalyzer", "method": "get_hot_sangams", "result_key": "hot_close_sangams"},
+    {"name": "due_open_sangams", "analyzer": "SangamAnalyzer", "method": "get_due_sangams", "result_key": "due_open_sangams"},
+    {"name": "due_close_sangams", "analyzer": "SangamAnalyzer", "method": "get_due_sangams", "result_key": "due_close_sangams"},
+]
+
+
 # --- Scoring Weights ---
 # Weights for different analytical signals to calculate confidence scores.
 # Higher values give more importance to that signal.

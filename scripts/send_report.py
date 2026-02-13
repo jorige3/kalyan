@@ -1,9 +1,10 @@
-import requests
-import pandas as pd
 import glob
-import json
 import os
+import re
 from datetime import datetime
+
+import pandas as pd
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,18 +16,25 @@ def send_daily_report():
         try:
             df_stats = pd.read_csv('reports/validation_log.csv')
             hit_rate = len(df_stats)/101*100 if len(df_stats)>0 else 0
-        except:
-            pass
+        except FileNotFoundError:
+            pass # It's okay if the log doesn't exist yet
 
-        # 2. Get LATEST kpred predictions (not hardcoded!)
-        predictions = ["34", "51", "55", "42", "6"]
+        # 2. Get LATEST kpred predictions
+        predictions = ["55", "04", "51", "34", "53"]  # Default fallback
         try:
-            latest_report = glob.glob('reports/kalyan_analysis_*.json')[0]
-            with open(latest_report, 'r') as f:
-                report_data = json.load(f)
-            predictions = [item.get('number', '00') for item in report_data.get('top_predictions', [])[:5]]
-        except:
-            print("Using fallback predictions")
+            latest_report_list = glob.glob('reports/kalyan_analysis_*.json')
+            if latest_report_list:
+                latest_report = max(latest_report_list, key=os.path.getctime)
+                print(f"Reading predictions from: {latest_report}")
+                with open(latest_report, 'r') as f:
+                    content = f.read()
+                # Extract numbers like "55 (High)", "4 (High)" etc.
+                matches = re.findall(r'(\d{1,2}) \(High\)', content)
+                if matches:
+                    predictions = matches[:5]
+                    print(f"✅ Found predictions: {predictions}")
+        except Exception as e:
+            print(f"⚠️ Could not read predictions, using fallback. Error: {e}")
 
         # 3. Latest results from CSV
         latest_results = "No recent data"
@@ -34,8 +42,9 @@ def send_daily_report():
             with open('data/kalyan.csv', 'r') as f:
                 lines = f.readlines()
                 latest_results = ''.join(lines[-3:]).strip()
-        except:
-            pass
+        except FileNotFoundError:
+            pass # It's okay if data file doesn't exist yet
+
 
         # 4. Build report
         report = f"""

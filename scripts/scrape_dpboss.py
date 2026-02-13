@@ -1,9 +1,9 @@
-import requests
-from bs4 import BeautifulSoup
-import pandas as pd
-from datetime import datetime
 import logging
 import os
+
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def scrape_kalyan_latest():
                 test_date = pd.to_datetime(date_str)
                 if test_date.year >= 2025:  # Only future dates
                     new_data.append(cols[:5])
-            except:
+            except Exception:
                 continue  # Skip junk like "26/01/2026to31/01/2026"
     
     logger.info(f"Found {len(new_data)} valid new records")

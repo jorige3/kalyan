@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from typing import Any, Dict, Iterable, Optional
 
+
 def _coerce_date(value: Any) -> date:
     if isinstance(value, datetime):
         return value.date()
