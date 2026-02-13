@@ -1,0 +1,153 @@
+/home/kishore/kalyan/venv/bin/python: No module named kpred
+✅ Daily Kalyan report sent to Telegram!
+/home/kishore/kalyan/venv/bin/python: No module named kpred
+2026-02-13 15:08:21,533 - INFO - Starting Kalyan analysis for 2026-02-13
+2026-02-13 15:08:21,549 - WARNING - Missing 'open_sangam' or 'close_sangam' in CSV. Generating placeholders.
+2026-02-13 15:08:21,556 - INFO - Loaded 101 records from data/kalyan.csv
+2026-02-13 15:08:21,634 - INFO - 📊 Analysis snapshot saved to /home/kishore/kalyan/reports/kalyan_analysis_2026-02-13.json
+2026-02-13 15:08:21,726 - INFO - maxp pruned
+2026-02-13 15:08:21,727 - INFO - cmap pruned
+2026-02-13 15:08:21,730 - INFO - kern dropped
+2026-02-13 15:08:21,731 - INFO - post pruned
+2026-02-13 15:08:21,732 - INFO - FFTM dropped
+2026-02-13 15:08:21,732 - INFO - MATH dropped
+2026-02-13 15:08:21,732 - INFO - GDEF dropped
+2026-02-13 15:08:21,732 - INFO - GPOS dropped
+2026-02-13 15:08:21,732 - INFO - GSUB dropped
+2026-02-13 15:08:21,733 - INFO - glyf pruned
+2026-02-13 15:08:21,734 - INFO - Added gid0 to subset
+2026-02-13 15:08:21,734 - INFO - Added first four glyphs to subset
+2026-02-13 15:08:21,734 - INFO - Closing glyph list over 'glyf': 44 glyphs before
+2026-02-13 15:08:21,735 - INFO - Glyph names: ['.notdef', '.null', 'A', 'E', 'H', 'M', 'P', 'a', 'b', 'bullet', 'c', 'd', 'e', 'f', 'five', 'four', 'g', 'h', 'i', 'l', 'm', 'n', 'nonmarkingreturn', 'o', 'one', 'p', 'parenleft', 'parenright', 'period', 'q', 'r', 's', 'seven', 'slash', 'space', 't', 'three', 'two', 'u', 'v', 'w', 'x', 'y', 'zero']
+2026-02-13 15:08:21,735 - INFO - Glyph IDs:   [0, 1, 2, 3, 11, 12, 17, 18, 19, 20, 21, 22, 23, 24, 26, 36, 40, 43, 48, 51, 68, 69, 70, 71, 72, 73, 74, 75, 76, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 2821]
+2026-02-13 15:08:21,735 - INFO - Closed glyph list over 'glyf': 44 glyphs after
+2026-02-13 15:08:21,735 - INFO - Glyph names: ['.notdef', '.null', 'A', 'E', 'H', 'M', 'P', 'a', 'b', 'bullet', 'c', 'd', 'e', 'f', 'five', 'four', 'g', 'h', 'i', 'l', 'm', 'n', 'nonmarkingreturn', 'o', 'one', 'p', 'parenleft', 'parenright', 'period', 'q', 'r', 's', 'seven', 'slash', 'space', 't', 'three', 'two', 'u', 'v', 'w', 'x', 'y', 'zero']
+2026-02-13 15:08:21,735 - INFO - Glyph IDs:   [0, 1, 2, 3, 11, 12, 17, 18, 19, 20, 21, 22, 23, 24, 26, 36, 40, 43, 48, 51, 68, 69, 70, 71, 72, 73, 74, 75, 76, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 2821]
+2026-02-13 15:08:21,736 - INFO - Retaining 44 glyphs
+2026-02-13 15:08:21,736 - INFO - head subsetting not needed
+2026-02-13 15:08:21,736 - INFO - hhea subsetting not needed
+2026-02-13 15:08:21,736 - INFO - maxp subsetting not needed
+2026-02-13 15:08:21,736 - INFO - OS/2 subsetting not needed
+2026-02-13 15:08:21,737 - INFO - hmtx subsetted
+2026-02-13 15:08:21,738 - INFO - cmap subsetted
+2026-02-13 15:08:21,738 - INFO - fpgm subsetting not needed
+2026-02-13 15:08:21,739 - INFO - prep subsetting not needed
+2026-02-13 15:08:21,739 - INFO - cvt  subsetting not needed
+2026-02-13 15:08:21,739 - INFO - loca subsetting not needed
+2026-02-13 15:08:21,739 - INFO - post subsetted
+2026-02-13 15:08:21,739 - INFO - gasp subsetting not needed
+2026-02-13 15:08:21,739 - INFO - name subsetting not needed
+2026-02-13 15:08:21,740 - INFO - glyf subsetted
+2026-02-13 15:08:21,740 - INFO - head pruned
+2026-02-13 15:08:21,741 - INFO - OS/2 Unicode ranges pruned: [0, 31]
+2026-02-13 15:08:21,741 - INFO - OS/2 CodePage ranges pruned: [0]
+2026-02-13 15:08:21,741 - INFO - glyf pruned
+2026-02-13 15:08:21,742 - INFO - name pruned
+2026-02-13 15:08:21,752 - INFO - maxp pruned
+2026-02-13 15:08:21,752 - INFO - cmap pruned
+2026-02-13 15:08:21,752 - INFO - kern dropped
+2026-02-13 15:08:21,752 - INFO - post pruned
+2026-02-13 15:08:21,752 - INFO - FFTM dropped
+2026-02-13 15:08:21,752 - INFO - GDEF dropped
+2026-02-13 15:08:21,752 - INFO - GPOS dropped
+2026-02-13 15:08:21,752 - INFO - GSUB dropped
+2026-02-13 15:08:21,752 - INFO - glyf pruned
+2026-02-13 15:08:21,753 - INFO - Added gid0 to subset
+2026-02-13 15:08:21,754 - INFO - Added first four glyphs to subset
+2026-02-13 15:08:21,754 - INFO - Closing glyph list over 'glyf': 38 glyphs before
+2026-02-13 15:08:21,754 - INFO - Glyph names: ['.notdef', '.null', 'A', 'C', 'E', 'F', 'K', 'M', 'P', 'S', 'T', 'a', 'b', 'c', 'colon', 'd', 'e', 'f', 'five', 'hyphen', 'i', 'k', 'l', 'n', 'nonmarkingreturn', 'o', 'one', 'p', 'r', 's', 'six', 'space', 't', 'three', 'two', 'x', 'y', 'zero']
+2026-02-13 15:08:21,754 - INFO - Glyph IDs:   [0, 1, 2, 3, 16, 19, 20, 21, 22, 24, 25, 29, 36, 38, 40, 41, 46, 48, 51, 54, 55, 68, 69, 70, 71, 72, 73, 76, 78, 79, 81, 82, 83, 85, 86, 87, 91, 92]
+2026-02-13 15:08:21,754 - INFO - Closed glyph list over 'glyf': 38 glyphs after
+2026-02-13 15:08:21,754 - INFO - Glyph names: ['.notdef', '.null', 'A', 'C', 'E', 'F', 'K', 'M', 'P', 'S', 'T', 'a', 'b', 'c', 'colon', 'd', 'e', 'f', 'five', 'hyphen', 'i', 'k', 'l', 'n', 'nonmarkingreturn', 'o', 'one', 'p', 'r', 's', 'six', 'space', 't', 'three', 'two', 'x', 'y', 'zero']
+2026-02-13 15:08:21,754 - INFO - Glyph IDs:   [0, 1, 2, 3, 16, 19, 20, 21, 22, 24, 25, 29, 36, 38, 40, 41, 46, 48, 51, 54, 55, 68, 69, 70, 71, 72, 73, 76, 78, 79, 81, 82, 83, 85, 86, 87, 91, 92]
+2026-02-13 15:08:21,754 - INFO - Retaining 38 glyphs
+2026-02-13 15:08:21,755 - INFO - head subsetting not needed
+2026-02-13 15:08:21,755 - INFO - hhea subsetting not needed
+2026-02-13 15:08:21,755 - INFO - maxp subsetting not needed
+2026-02-13 15:08:21,755 - INFO - OS/2 subsetting not needed
+2026-02-13 15:08:21,755 - INFO - hmtx subsetted
+2026-02-13 15:08:21,757 - INFO - cmap subsetted
+2026-02-13 15:08:21,757 - INFO - fpgm subsetting not needed
+2026-02-13 15:08:21,757 - INFO - prep subsetting not needed
+2026-02-13 15:08:21,757 - INFO - cvt  subsetting not needed
+2026-02-13 15:08:21,757 - INFO - loca subsetting not needed
+2026-02-13 15:08:21,757 - INFO - post subsetted
+2026-02-13 15:08:21,757 - INFO - gasp subsetting not needed
+2026-02-13 15:08:21,757 - INFO - name subsetting not needed
+2026-02-13 15:08:21,758 - INFO - glyf subsetted
+2026-02-13 15:08:21,759 - INFO - head pruned
+2026-02-13 15:08:21,759 - INFO - OS/2 Unicode ranges pruned: [0]
+2026-02-13 15:08:21,759 - INFO - OS/2 CodePage ranges pruned: [0]
+2026-02-13 15:08:21,759 - INFO - glyf pruned
+2026-02-13 15:08:21,760 - INFO - name pruned
+2026-02-13 15:08:21,769 - INFO - 📄 PDF saved to /home/kishore/kalyan/reports/kalyan_analysis_2026-02-13.pdf
+2026-02-13 15:08:21,776 - WARNING - Validation skipped: report not found for 2026-02-11.
+============================================================
+KALYAN MARKET ANALYSIS | 13-Feb-2026
+============================================================
+Market Mood           : Active
+Analytical Confidence : 10/10
+------------------------------------------------------------
+4 (High)
+  • High frequency in recent draws
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+34 (High)
+  • High frequency in recent draws
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+51 (High)
+  • High frequency in recent draws
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+55 (High)
+  • High frequency in recent draws
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+42 (Medium)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+✅ Daily Kalyan report sent to Telegram!
+2026-02-13 15:10:46,933 - INFO - Starting Kalyan analysis for 2026-02-13
+2026-02-13 15:10:46,951 - WARNING - Missing 'open_sangam' or 'close_sangam' in CSV. Generating placeholders.
+2026-02-13 15:10:46,956 - INFO - Loaded 101 records from data/kalyan.csv
+2026-02-13 15:10:47,040 - INFO - 📊 Analysis snapshot saved to /home/kishore/kalyan/reports/kalyan_analysis_2026-02-13.json
+2026-02-13 15:10:47,047 - WARNING - Validation skipped: report not found for 2026-02-11.
+============================================================
+KALYAN MARKET ANALYSIS | 13-Feb-2026
+============================================================
+Market Mood           : Active
+Analytical Confidence : 10/10
+------------------------------------------------------------
+4 (High)
+  • High frequency in recent draws
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+55 (High)
+  • High frequency in recent draws
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+51 (High)
+  • High frequency in recent draws
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+34 (High)
+  • High frequency in recent draws
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+6 (Medium)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+✅ Daily Kalyan report sent to Telegram!
+./run_daily.sh: line 4: kpred: command not found
+✅ Daily Kalyan report sent to Telegram!

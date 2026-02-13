@@ -6,3 +6,4 @@ six==1.17.0
 fpdf2==2.7.9 # Added for PDF generationbeautifulsoup4
 lxml
 requests
+python-dotenv
