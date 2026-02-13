@@ -3,6 +3,10 @@ import pandas as pd
 import glob
 from datetime import datetime
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 def send_daily_report():
     try:
         # Read latest data
@@ -32,9 +36,9 @@ def send_daily_report():
 💻 Ollama: qwen2.5-coder:1.5b running on port 11434
         """
 
-        # TELEGRAM SETUP (REPLACE WITH YOUR BOT DETAILS)
-        bot_token = '8358197339:AAFXYZyCSfX519-g0hVNdVWJVSJKQKLoJ1I'  # From @BotFather
-        chat_id = '7975962879'      # Your Telegram chat ID
+        bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+        chat_id = os.getenv('TELEGRAM_CHAT_ID')
+
         
         url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
         data = {
