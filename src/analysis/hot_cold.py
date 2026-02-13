@@ -65,34 +65,35 @@ class HotColdAnalyzer:
         freq = self.get_digit_frequency(lookback_days)
         return freq.tail(bottom_n).index.tolist()
 
-    def get_hot_jodis(self, lookback_days: int = 30, top_n: int = 5) -> List[str]:
-        """Identifies the top N most frequent jodis."""
+    def get_hot_jodis(self, lookback_days: int = 30, top_n: int = 5) -> Dict[str, int]:
+        """Identifies the top N most frequent jodis along with their frequencies."""
         freq = self.get_jodi_frequency(lookback_days)
-        return freq.head(top_n).index.tolist()
+        return freq.head(top_n).to_dict()
 
     def get_cold_jodis(self, lookback_days: int = 30, bottom_n: int = 5) -> List[str]:
         """Identifies the bottom N least frequent jodis."""
         freq = self.get_jodi_frequency(lookback_days)
         return freq.tail(bottom_n).index.tolist()
 
-    def get_due_cycles(self, lookback_days: int = 90, threshold_days: int = 7) -> Dict[str, List[str]]:
+    def get_due_cycles(self, lookback_days: int = 90, threshold_days: int = 7) -> Dict[str, Dict[str, int]]:
         """
         Identifies jodis/digits that are 'due' based on their last appearance.
         A jodi/digit is due if it hasn't appeared for at least `threshold_days`
-        within the `lookback_days` period.
+        within the `lookback_days` period. It now also returns the number of days overdue.
         """
         recent_df = self._get_recent_data(lookback_days)
         if recent_df.empty:
-            return {"due_jodis": [], "due_digits": []}
+            return {"due_jodis": {}, "due_digits": {}}
 
         latest_date = recent_df['date'].max()
 
         # Due Jodis
         last_jodi_appearance = recent_df.groupby('jodi')['date'].max()
-        due_jodis = []
+        due_jodis_with_days_overdue = {}
         for jodi, last_date in last_jodi_appearance.items():
-            if (latest_date - last_date).days >= threshold_days:
-                due_jodis.append(jodi)
+            days_since_last_appearance = (latest_date - last_date).days
+            if days_since_last_appearance >= threshold_days:
+                due_jodis_with_days_overdue[jodi] = days_since_last_appearance
 
         # Due Digits (open and close)
         all_digits_data = pd.concat([
@@ -101,36 +102,37 @@ class HotColdAnalyzer:
         ])
         all_digits_data['digit'] = all_digits_data['digit'].astype(int)
         last_digit_appearance = all_digits_data.groupby('digit')['date'].max()
-        due_digits = []
+        due_digits_with_days_overdue = {}
         for digit, last_date in last_digit_appearance.items():
-            if (latest_date - last_date).days >= threshold_days:
-                due_digits.append(digit)
+            days_since_last_appearance = (latest_date - last_date).days
+            if days_since_last_appearance >= threshold_days:
+                due_digits_with_days_overdue[str(digit)] = days_since_last_appearance
         
-        return {"due_jodis": sorted(due_jodis), "due_digits": sorted(due_digits)}
+        return {"due_jodis": due_jodis_with_days_overdue, "due_digits": due_digits_with_days_overdue}
 
-    def get_exhausted_numbers(self, lookback_days: int = 30, consecutive_hits: int = 3) -> Dict[str, List[str]]:
+    def get_exhausted_numbers(self, lookback_days: int = 30, consecutive_hits: int = 3) -> Dict[str, Dict[str, int]]:
         """
         Identifies jodis/digits that might be 'exhausted' after a streak of consecutive hits.
         A jodi/digit is exhausted if it has appeared `consecutive_hits` or more times
-        in the recent `lookback_days` period.
+        in the recent `lookback_days` period, along with their respective counts.
         """
         recent_df = self._get_recent_data(lookback_days)
         if recent_df.empty:
-            return {"exhausted_jodis": [], "exhausted_digits": []}
+            return {"exhausted_jodis": {}, "exhausted_digits": {}}
 
-        exhausted_jodis = []
+        exhausted_jodis_with_counts = {}
         jodi_counts = recent_df['jodi'].value_counts()
         for jodi, count in jodi_counts.items():
             if count >= consecutive_hits:
-                exhausted_jodis.append(jodi)
+                exhausted_jodis_with_counts[jodi] = count
 
-        exhausted_digits = []
+        exhausted_digits_with_counts = {}
         digit_counts = self.get_digit_frequency(lookback_days)
         for digit, count in digit_counts.items():
             if count >= consecutive_hits: # Using the same threshold for digits
-                exhausted_digits.append(digit)
+                exhausted_digits_with_counts[str(digit)] = count
 
-        return {"exhausted_jodis": sorted(exhausted_jodis), "exhausted_digits": sorted(exhausted_digits)}
+        return {"exhausted_jodis": exhausted_jodis_with_counts, "exhausted_digits": exhausted_digits_with_counts}
 
 
 if __name__ == '__main__':

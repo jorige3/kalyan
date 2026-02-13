@@ -5,7 +5,7 @@ src/analysis/sangam_analysis.py
 Module for advanced Sangam analysis, including hot, cold, and due Sangams.
 """
 
-from typing import Dict, List
+from typing import Dict
 
 import pandas as pd
 
@@ -24,46 +24,51 @@ class SangamAnalyzer:
         self.df['open_sangam'] = self.df['open_sangam'].astype(str)
         self.df['close_sangam'] = self.df['close_sangam'].astype(str)
 
-    def get_hot_sangams(self, lookback_days: int = 30, top_n: int = 5) -> Dict[str, List[str]]:
+    def get_hot_sangams(self, lookback_days: int = 30, top_n: int = 5) -> Dict[str, Dict[str, int]]:
         """
-        Identifies 'hot' open and close Sangams based on their frequency in recent days.
+        Identifies 'hot' open and close Sangams based on their frequency in recent days,
+        along with their respective frequency counts.
         """
         latest_date = self.df['date'].max()
         recent_df = self.df[self.df['date'] >= (latest_date - pd.Timedelta(days=lookback_days))]
 
-        hot_open_sangams = recent_df['open_sangam'].value_counts().head(top_n).index.tolist()
-        hot_close_sangams = recent_df['close_sangam'].value_counts().head(top_n).index.tolist()
+        hot_open_sangams = recent_df['open_sangam'].value_counts().head(top_n).to_dict()
+        hot_close_sangams = recent_df['close_sangam'].value_counts().head(top_n).to_dict()
 
         return {
             "hot_open_sangams": hot_open_sangams,
             "hot_close_sangams": hot_close_sangams
         }
 
-    def get_due_sangams(self, lookback_days: int = 60, top_n: int = 5) -> Dict[str, List[str]]:
+    def get_due_sangams(self, lookback_days: int = 60) -> Dict[str, Dict[str, int]]:
         """
-        Identifies 'due' open and close Sangams based on their absence in recent days.
+        Identifies 'due' open and close Sangams based on their absence in recent days,
+        along with the number of days they are overdue.
         """
         latest_date = self.df['date'].max()
         recent_df = self.df[self.df['date'] >= (latest_date - pd.Timedelta(days=lookback_days))]
 
-        all_open_sangams = self.df['open_sangam'].unique()
-        all_close_sangams = self.df['close_sangam'].unique()
-
-        due_open_sangams = []
-        for sangam in all_open_sangams:
+        # Due Open Sangams
+        last_open_sangam_appearance = self.df.groupby('open_sangam')['date'].max()
+        due_open_sangams_with_days_overdue = {}
+        for sangam, last_date in last_open_sangam_appearance.items():
+            # A sangam is considered "due" if it hasn't appeared in the recent_df
+            # and we calculate how many days it has been since its last appearance in the full historical data
             if sangam not in recent_df['open_sangam'].values:
-                due_open_sangams.append(sangam)
+                days_since_last_appearance = (latest_date - last_date).days
+                due_open_sangams_with_days_overdue[sangam] = days_since_last_appearance
         
-        due_close_sangams = []
-        for sangam in all_close_sangams:
+        # Due Close Sangams
+        last_close_sangam_appearance = self.df.groupby('close_sangam')['date'].max()
+        due_close_sangams_with_days_overdue = {}
+        for sangam, last_date in last_close_sangam_appearance.items():
             if sangam not in recent_df['close_sangam'].values:
-                due_close_sangams.append(sangam)
+                days_since_last_appearance = (latest_date - last_date).days
+                due_close_sangams_with_days_overdue[sangam] = days_since_last_appearance
         
-        # For simplicity, just returning all due ones found.
-        # A more sophisticated approach would involve sorting by last appearance date.
         return {
-            "due_open_sangams": due_open_sangams[:top_n],
-            "due_close_sangams": due_close_sangams[:top_n]
+            "due_open_sangams": due_open_sangams_with_days_overdue,
+            "due_close_sangams": due_close_sangams_with_days_overdue
         }
 
     # Placeholder for other advanced Sangam analysis methods

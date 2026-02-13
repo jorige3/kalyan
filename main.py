@@ -150,27 +150,64 @@ def generate_daily_summary_and_confidence(analysis_results: Dict) -> Dict:
         "exhausted": analysis_results["exhausted_jodis"],
     }
 
-    all_picks = set().union(
-        analysis_results["hot_jodis"],
-        analysis_results["due_jodis"],
-        analysis_results["trend_due_jodis"],
-        analysis_results["hot_open_sangams"],
-        analysis_results["hot_close_sangams"],
-        analysis_results["due_open_sangams"],
-        analysis_results["due_close_sangams"],
-    )
+    all_picks = set()
+    for key, value in analysis_results.items():
+        # Handle jodis and sangams that are now dictionaries
+        if key in ["hot_jodis", "due_jodis", "trend_due_jodis", "exhausted_jodis",
+                   "hot_open_sangams", "hot_close_sangams", "due_open_sangams", "due_close_sangams"]:
+            if isinstance(value, dict):
+                all_picks.update(value.keys())
+            elif isinstance(value, list): # Fallback for any unexpected list results
+                all_picks.update(value)
+        # Add any other analysis results directly if they are already simple lists of picks
+        elif isinstance(value, list):
+            all_picks.update(value)
+
 
     scored = []
     for val in all_picks:
         score = 0
+
+        # High Frequency Jodis (higher frequency = higher score)
         if val in signals["high_frequency"]:
-            score += config.SCORING_WEIGHTS["HIGH_FREQUENCY_JODI"]
+            frequency = signals["high_frequency"][val]
+            score += config.SCORING_WEIGHTS["HIGH_FREQUENCY_JODI"] * frequency
+
+        # Trend Window (higher days overdue = higher score)
         if val in signals["trend_window"]:
-            score += config.SCORING_WEIGHTS["TREND_ALIGNED_JODI"]
+            days_overdue = signals["trend_window"][val]
+            score += config.SCORING_WEIGHTS["TREND_ALIGNED_JODI"] * days_overdue
+
+        # Extended Absence (higher days overdue = higher score)
         if val in signals["extended_absence"]:
-            score += config.SCORING_WEIGHTS["EXTENDED_ABSENCE_JODI"]
+            days_overdue = signals["extended_absence"][val]
+            score += config.SCORING_WEIGHTS["EXTENDED_ABSENCE_JODI"] * days_overdue
+
+        # Exhausted (higher count = higher penalty)
         if val in signals["exhausted"]:
-            score += config.SCORING_WEIGHTS["EXHAUSTED_PATTERN_PENALTY"]
+            exhausted_count = signals["exhausted"][val]
+            # Applying penalty: a higher count means a stronger penalty
+            score += config.SCORING_WEIGHTS["EXHAUSTED_PATTERN_PENALTY"] * exhausted_count
+            
+        # Hot Open Sangams (higher frequency = higher score)
+        if val in analysis_results["hot_open_sangams"]:
+            frequency = analysis_results["hot_open_sangams"][val]
+            score += config.SCORING_WEIGHTS["HIGH_FREQUENCY_OPEN_SANGAM"] * frequency
+
+        # Hot Close Sangams (higher frequency = higher score)
+        if val in analysis_results["hot_close_sangams"]:
+            frequency = analysis_results["hot_close_sangams"][val]
+            score += config.SCORING_WEIGHTS["HIGH_FREQUENCY_CLOSE_SANGAM"] * frequency
+
+        # Due Open Sangams (higher days overdue = higher score)
+        if val in analysis_results["due_open_sangams"]:
+            days_overdue = analysis_results["due_open_sangams"][val]
+            score += config.SCORING_WEIGHTS["EXTENDED_ABSENCE_OPEN_SANGAM"] * days_overdue
+
+        # Due Close Sangams (higher days overdue = higher score)
+        if val in analysis_results["due_close_sangams"]:
+            days_overdue = analysis_results["due_close_sangams"][val]
+            score += config.SCORING_WEIGHTS["EXTENDED_ABSENCE_CLOSE_SANGAM"] * days_overdue
 
         confidence = ReportText.CONFIDENCE_LOW
         if score >= config.CONFIDENCE_THRESHOLDS["HIGH"]:

@@ -91,27 +91,29 @@ class TrendWindowAnalyzer:
         all_digits = pd.concat([open_digits, close_digits])
         return all_digits.value_counts().to_dict()
 
-    def get_due_cycles_by_last_appearance(self, lookback_days: int = 90, threshold_days: int = 7) -> Dict[str, List[str]]:
+    def get_due_cycles_by_last_appearance(self, lookback_days: int = 90, threshold_days: int = 7) -> Dict[str, Dict[str, int]]:
         """
         Identifies jodis/digits that are 'due' based on their last appearance within a lookback period.
-        A jodi/digit is due if it hasn't appeared for at least `threshold_days`.
+        A jodi/digit is due if it hasn't appeared for at least `threshold_days`,
+        along with their respective days overdue.
         """
         if self.df.empty:
-            return {"due_jodis": [], "due_digits": []}
+            return {"due_jodis": {}, "due_digits": {}}
 
         latest_date = self.df['date'].max()
         start_date = latest_date - timedelta(days=lookback_days)
         recent_df = self.df[self.df['date'] >= start_date]
 
         if recent_df.empty:
-            return {"due_jodis": [], "due_digits": []}
+            return {"due_jodis": {}, "due_digits": {}}
 
         # Due Jodis
         last_jodi_appearance = recent_df.groupby('jodi')['date'].max()
-        due_jodis = []
+        due_jodis_with_days_overdue = {}
         for jodi, last_date in last_jodi_appearance.items():
-            if (latest_date - last_date).days >= threshold_days:
-                due_jodis.append(jodi)
+            days_since_last_appearance = (latest_date - last_date).days
+            if days_since_last_appearance >= threshold_days:
+                due_jodis_with_days_overdue[jodi] = days_since_last_appearance
 
         # Due Digits (open and close)
         all_digits_data = pd.concat([
@@ -120,43 +122,44 @@ class TrendWindowAnalyzer:
         ])
         all_digits_data['digit'] = all_digits_data['digit'].astype(int)
         last_digit_appearance = all_digits_data.groupby('digit')['date'].max()
-        due_digits = []
+        due_digits_with_days_overdue = {}
         for digit, last_date in last_digit_appearance.items():
-            if (latest_date - last_date).days >= threshold_days:
-                due_digits.append(digit)
+            days_since_last_appearance = (latest_date - last_date).days
+            if days_since_last_appearance >= threshold_days:
+                due_digits_with_days_overdue[str(digit)] = days_since_last_appearance
         
-        return {"due_jodis": sorted(due_jodis), "due_digits": sorted(due_digits)}
+        return {"due_jodis": due_jodis_with_days_overdue, "due_digits": due_digits_with_days_overdue}
 
-    def get_exhausted_numbers_by_streak(self, lookback_days: int = 30, consecutive_hits: int = 3) -> Dict[str, List[str]]:
+    def get_exhausted_numbers_by_streak(self, lookback_days: int = 30, consecutive_hits: int = 3) -> Dict[str, Dict[str, int]]:
         """
         Identifies jodis/digits that might be 'exhausted' after a streak of consecutive hits
-        within a lookback period.
+        within a lookback period, along with their respective counts.
         """
         if self.df.empty:
-            return {"exhausted_jodis": [], "exhausted_digits": []}
+            return {"exhausted_jodis": {}, "exhausted_digits": {}}
 
         latest_date = self.df['date'].max()
         start_date = latest_date - timedelta(days=lookback_days)
         recent_df = self.df[self.df['date'] >= start_date]
 
         if recent_df.empty:
-            return {"exhausted_jodis": [], "exhausted_digits": []}
+            return {"exhausted_jodis": {}, "exhausted_digits": {}}
 
-        exhausted_jodis = []
+        exhausted_jodis_with_counts = {}
         jodi_counts = recent_df['jodi'].value_counts()
         for jodi, count in jodi_counts.items():
             if count >= consecutive_hits:
-                exhausted_jodis.append(jodi)
+                exhausted_jodis_with_counts[jodi] = count
 
-        exhausted_digits = []
+        exhausted_digits_with_counts = {}
         # Combine open and close digits for frequency analysis
         all_digits = pd.concat([recent_df['open'].dropna().astype(int), recent_df['close'].dropna().astype(int)])
         digit_counts = all_digits.value_counts()
         for digit, count in digit_counts.items():
             if count >= consecutive_hits:
-                exhausted_digits.append(digit)
+                exhausted_digits_with_counts[str(digit)] = count
 
-        return {"exhausted_jodis": sorted(exhausted_jodis), "exhausted_digits": sorted(exhausted_digits)}
+        return {"exhausted_jodis": exhausted_jodis_with_counts, "exhausted_digits": exhausted_digits_with_counts}
 
 
 if __name__ == '__main__':
