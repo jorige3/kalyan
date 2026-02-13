@@ -6,11 +6,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
 
+import pandas as pd  # New Import
 from fpdf import FPDF, XPos, YPos
 
 import config
 from src.analysis.explainability import explain_pick
 from src.analysis.hot_cold import HotColdAnalyzer
+from src.analysis.monte_carlo import MonteCarloAnalyzer  # New Import
 from src.analysis.sangam_analysis import SangamAnalyzer
 from src.analysis.trend_window import TrendWindowAnalyzer
 from src.engine.kalyan_engine import KalyanEngine
@@ -80,16 +82,30 @@ def write_analysis_snapshot(
     logging.info(f"📊 Analysis snapshot saved to {output_path}")
 
 # -------------------------------------------------------------------
+# Monte Carlo Simulation Runner
+# -------------------------------------------------------------------
+def run_monte_carlo_simulation(df: pd.DataFrame, top_picks: List[Dict], num_simulations: int) -> Dict:
+    """
+    Orchestrates the Monte Carlo simulation to assess prediction confidence.
+    """
+    current_pick_values = [p["value"] for p in top_picks]
+    mc_analyzer = MonteCarloAnalyzer(df)
+    results = mc_analyzer.run_simulation(current_pick_values, num_simulations)
+    return results
+
+
+# -------------------------------------------------------------------
 # PDF Report
 # -------------------------------------------------------------------
 
 class PDFReport(FPDF):
-    def __init__(self):
+    def __init__(self, analysis_results: Dict):
         super().__init__()
         fonts = BASE_DIR / "fonts"
         self.add_font("DejaVu", "", str(fonts / "DejaVuSans.ttf"))
         self.add_font("DejaVu", "B", str(fonts / "DejaVuSansCondensed-Bold.ttf"))
         self.set_font("DejaVu", "", 12)
+        self.analysis_results = analysis_results
 
     def header(self):
         self.set_font("DejaVu", "B", 14)
@@ -136,7 +152,50 @@ class PDFReport(FPDF):
             self.cell(widths[0], 7, str(p["value"]), 1)
             self.cell(widths[1], 7, p["confidence"], 1)
             self.cell(widths[2], 7, f'{p["score"]:.2f}', 1)
+            # Multi-line cell for reasons
+            x, y = self.get_x(), self.get_y()
             self.multi_cell(widths[3], 7, reasons, 1)
+            self.set_xy(x + widths[3], y) # Reset position after multi_cell
+        self.ln(5)
+
+    def add_analysis_table(self, title: str, headers: List[str], data: Dict[str, int], col_widths: List[float]):
+        if not data:
+            return
+
+        self.chapter_title(title)
+        self.set_font("DejaVu", "B", 10)
+        for header, width in zip(headers, col_widths):
+            self.cell(width, 7, header, 1, align="C")
+        self.ln()
+
+        self.set_font("DejaVu", "", 9)
+        for key, value in data.items():
+            self.cell(col_widths[0], 7, str(key), 1)
+            self.cell(col_widths[1], 7, str(value), 1)
+            self.ln()
+        self.ln(5)
+
+    def add_bar_chart_for_digits(self, digit_frequencies: Dict[str, int], title: str, bar_width=5):
+        if not digit_frequencies:
+            return
+        
+        self.chapter_title(title)
+        self.set_font("DejaVu", "", 9)
+        
+        # Determine maximum frequency for scaling
+        max_freq = max(digit_frequencies.values()) if digit_frequencies else 1
+
+        # Sort digits for consistent display
+        sorted_digits = sorted(digit_frequencies.keys())
+
+        # Bar chart representation
+        for digit in sorted_digits:
+            freq = digit_frequencies[digit]
+            # Scale bar length (max 100 units for visibility)
+            bar_length = int((freq / max_freq) * 100) if max_freq > 0 else 0
+            bar_text = f"{digit} ({freq}): {'█' * int(bar_length / bar_width)}" # Adjust bar_width for denser blocks
+            self.cell(0, 7, bar_text, 0, 1)
+        self.ln(5)
 
 # -------------------------------------------------------------------
 # Core Summary Logic
@@ -281,6 +340,11 @@ def main():
 
     summary = generate_daily_summary_and_confidence(analysis_results)
 
+    # Run Monte Carlo simulation
+    mc_results = run_monte_carlo_simulation(df, summary["top_picks_with_confidence"], config.MONTE_CARLO_SIMULATIONS)
+    summary["monte_carlo_results"] = mc_results
+    summary["analytical_confidence_score"] = mc_results["confidence_score"] # Use MC confidence
+
     json_path = REPORTS_DIR / f"kalyan_analysis_{analysis_date:%Y-%m-%d}.json"
     write_analysis_snapshot(
         json_path,
@@ -316,6 +380,18 @@ def main():
             f"**Confidence:** {summary['analytical_confidence_score']}/10"
         )
         pdf.add_picks_table(summary["top_picks_with_confidence"])
+        
+        # Add the new tables and charts
+        pdf.add_analysis_table("Hot Jodis", ["Jodi", "Frequency"], analysis_results["hot_jodis"], [40, 40])
+        pdf.add_analysis_table("Due Jodis", ["Jodi", "Days Overdue"], analysis_results["due_jodis"], [40, 40])
+        pdf.add_analysis_table("Exhausted Jodis", ["Jodi", "Count"], analysis_results["exhausted_jodis"], [40, 40])
+        pdf.add_analysis_table("Hot Open Sangams", ["Sangam", "Frequency"], analysis_results["hot_open_sangams"], [60, 40])
+        pdf.add_analysis_table("Hot Close Sangams", ["Sangam", "Frequency"], analysis_results["hot_close_sangams"], [60, 40])
+        pdf.add_analysis_table("Due Open Sangams", ["Sangam", "Days Overdue"], analysis_results["due_open_sangams"], [60, 40])
+        pdf.add_analysis_table("Due Close Sangams", ["Sangam", "Days Overdue"], analysis_results["due_close_sangams"], [60, 40])
+
+        # Hot Digits for bar chart
+        pdf.add_bar_chart_for_digits(analysis_results["hot_digits"], "Hot Digits Frequency")
         pdf.output(pdf_path)
         logging.info(f"📄 PDF saved to {pdf_path}")
 

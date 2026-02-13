@@ -1,11 +1,13 @@
+from datetime import datetime, timedelta
+from unittest.mock import patch
+
 import pandas as pd
 import pytest
-from datetime import datetime, timedelta
 
+from main import generate_daily_summary_and_confidence  # Import the function for testing
 from src.analysis.hot_cold import HotColdAnalyzer
-from src.analysis.trend_window import TrendWindowAnalyzer
 from src.analysis.sangam_analysis import SangamAnalyzer
-from main import generate_daily_summary_and_confidence # Import the function for testing
+from src.analysis.trend_window import TrendWindowAnalyzer
 
 
 @pytest.fixture
@@ -150,12 +152,15 @@ def test_sangam_analyzer_get_due_sangams(dummy_dataframe_for_analysis):
         assert due_sangams['due_open_sangams']['002'] >= 60
 
 # --- Tests for generate_daily_summary_and_confidence in main.py ---
+
 # This requires mocking config.SCORING_WEIGHTS
-import config
-from unittest.mock import patch
+
+
 
 @pytest.fixture
+
 def mock_config_weights():
+
     with patch('config.SCORING_WEIGHTS', {
         "HIGH_FREQUENCY_JODI": 1.0,
         "TREND_ALIGNED_JODI": 1.0,

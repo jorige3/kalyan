@@ -55,10 +55,10 @@ class HotColdAnalyzer:
         
         return recent_df['jodi'].value_counts().sort_values(ascending=False)
 
-    def get_hot_digits(self, lookback_days: int = 30, top_n: int = 5) -> List[int]:
-        """Identifies the top N most frequent digits."""
+    def get_hot_digits(self, lookback_days: int = 30, top_n: int = 5) -> Dict[str, int]:
+        """Identifies the top N most frequent digits along with their frequencies."""
         freq = self.get_digit_frequency(lookback_days)
-        return freq.head(top_n).index.tolist()
+        return freq.head(top_n).rename(index=str).to_dict()
 
     def get_cold_digits(self, lookback_days: int = 30, bottom_n: int = 5) -> List[int]:
         """Identifies the bottom N least frequent digits."""

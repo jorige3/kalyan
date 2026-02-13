@@ -153,3 +153,6 @@ Analytical Confidence : 10/10
 ✅ Daily Kalyan report sent to Telegram!
 ./run_daily.sh: line 4: kpred: command not found
 ✅ Daily Kalyan report sent to Telegram!
+./run_daily.sh: line 4: kpred: command not found
+Reading predictions from: reports/kalyan_analysis_2026-02-13.json
+❌ Report failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot7975804100:AAElAcT2Df_AMwnZr-z0eQy9dHq4A1IcYpM/sendMessage (Caused by NameResolutionError("HTTPSConnection(host='api.telegram.org', port=443): Failed to resolve 'api.telegram.org' ([Errno -3] Temporary failure in name resolution)"))

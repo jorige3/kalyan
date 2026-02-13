@@ -14,6 +14,7 @@ TOP_PICKS_COUNT = 3 # Number of top picks to generate
 
 # Monte Carlo Simulation
 MONTE_CARLO_SIMULATIONS = 1000
+MC_TOP_N_PICKS = 5
 
 # --- Analysis Pipeline ---
 # Defines the sequence of analysis steps to be executed.

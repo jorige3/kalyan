@@ -1,5 +1,5 @@
-numpy==2.4.1
-pandas==3.0.0
+numpy
+pandas
 python-dateutil==2.9.0.post0
 ruff==0.14.14
 six==1.17.0
@@ -8,3 +8,4 @@ beautifulsoup4==4.12.3
 lxml==5.2.2
 requests==2.32.3
 python-dotenv==1.0.1
+matplotlib==3.8.0
