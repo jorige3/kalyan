@@ -171,3 +171,10 @@ Reading predictions from: reports/kalyan_analysis_2026-02-13.json
 /home/kishore/kalyan/run_daily.sh: line 4: kpred: command not found
 Reading predictions from: reports/kalyan_analysis_2026-02-13.json
 ✅ Daily Kalyan report sent to Telegram!
+[main 842bd44] Daily update 2026-02-14
+ 1 file changed, 3 insertions(+)
+To github.com:jorige3/kalyan.git
+   bbbd72e..842bd44  main -> main
+/home/kishore/kalyan/run_daily.sh: line 4: kpred: command not found
+Reading predictions from: reports/kalyan_analysis_2026-02-13.json
+✅ Daily Kalyan report sent to Telegram!
