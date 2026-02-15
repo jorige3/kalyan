@@ -194,7 +194,7 @@ class PDFReport(FPDF):
             # Scale bar length (max 100 units for visibility)
             bar_length = int((freq / max_freq) * 100) if max_freq > 0 else 0
             bar_text = f"{digit} ({freq}): {'█' * int(bar_length / bar_width)}" # Adjust bar_width for denser blocks
-            self.cell(0, 7, bar_text, 0, 1)
+            self.cell(0, 7, bar_text, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         self.ln(5)
 
 # -------------------------------------------------------------------
@@ -372,7 +372,7 @@ def main():
 
     pdf_path = REPORTS_DIR / f"kalyan_analysis_{analysis_date:%Y-%m-%d}.pdf"
     if not pdf_path.exists():
-        pdf = PDFReport()
+        pdf = PDFReport(analysis_results)
         pdf.alias_nb_pages()
         pdf.add_page()
         pdf.summary_body(
