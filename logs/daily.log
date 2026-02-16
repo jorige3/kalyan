@@ -198,3 +198,36 @@ To github.com:jorige3/kalyan.git
 ./run_daily.sh: line 4: kpred: command not found
 Reading predictions from: reports/kalyan_analysis_2026-02-16.json
 ✅ Daily Kalyan report sent to Telegram!
+2026-02-16 20:29:27,838 - INFO - Starting Kalyan analysis for 2026-02-16
+2026-02-16 20:29:27,850 - WARNING - Missing sangam columns in CSV. Generating placeholders.
+2026-02-16 20:29:27,854 - INFO - Loaded 104 records from data/kalyan.csv
+2026-02-16 20:29:27,954 - INFO - 📊 Analysis snapshot saved to /home/kishore/kalyan/reports/kalyan_analysis_2026-02-16.json
+2026-02-16 20:29:27,959 - WARNING - Validation skipped: report not found for 2026-02-14.
+============================================================
+KALYAN MARKET ANALYSIS | 16-Feb-2026
+============================================================
+Market Mood           : Active
+Analytical Confidence : 0.76/10
+------------------------------------------------------------
+96 (High)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+11 (High)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+79 (High)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+9 (High)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+87 (High)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+Reading predictions from: reports/kalyan_analysis_2026-02-16.json
+✅ Daily Kalyan report sent to Telegram!
