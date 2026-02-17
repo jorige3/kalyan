@@ -34,8 +34,7 @@ def check_validation_log():
             logger.info(f"✅ Validation data found: {total_hits} hits in {total_predictions} games.")
             logger.info(f"📊 HIT RATE (Top 5): {hit_rate:.2f}%")
             
-            print("
---- Latest Validation Results ---")
+            print("\n--- Latest Validation Results ---")
             print(df.tail())
             return df, hit_rate
         else:
@@ -46,8 +45,7 @@ def check_validation_log():
         logger.warning("No validation data available to calculate hit rate.")
         print(f"--> Could not find or read the validation log: {csv_path}")
         print("--> This file is generated automatically when the main analysis runs on a new day's data.")
-        print("
-Expected format for the CSV file:")
+        print("\nExpected format for the CSV file:")
         print("date,prediction_date,actual_jodi,predicted_top5,hit_rank,top1_hit,top3_hit,top5_hit,confidence,report_path")
         return pd.DataFrame(), 0
     except Exception as e:
