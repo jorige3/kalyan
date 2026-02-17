@@ -231,3 +231,42 @@ Analytical Confidence : 0.76/10
 
 Reading predictions from: reports/kalyan_analysis_2026-02-16.json
 ✅ Daily Kalyan report sent to Telegram!
+To github.com:jorige3/kalyan.git
+   0777f6e..4e9ee43  main -> main
+2026-02-17 15:35:31,940 - INFO - Starting Kalyan analysis for 2026-02-17
+2026-02-17 15:35:31,949 - WARNING - Missing sangam columns in CSV. Generating placeholders.
+2026-02-17 15:35:31,953 - INFO - Loaded 105 records from data/kalyan.csv
+2026-02-17 15:35:32,053 - INFO - 📊 Analysis snapshot saved to /home/kishore/kalyan/reports/kalyan_analysis_2026-02-17.json
+2026-02-17 15:35:32,058 - INFO - Validation already logged for 2026-02-17. Skipping.
+============================================================
+KALYAN MARKET ANALYSIS | 17-Feb-2026
+============================================================
+Market Mood           : Active
+Analytical Confidence : 0.63/10
+------------------------------------------------------------
+11 (High)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+79 (High)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+9 (High)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+87 (High)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+72 (High)
+  • Appears in active trend window
+  • Extended absence cycle (statistically due)
+
+
+--- Hit Rate ---
+🎯 Yesterday's predictions: ['11', '79', '9', '87', '72']
+📊 Tomorrow's actual vs pred → Track hit rate!
+Reading predictions from: reports/kalyan_analysis_2026-02-17.json
+✅ Daily Kalyan report sent to Telegram!

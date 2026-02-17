@@ -5,6 +5,9 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
+import glob
+import os
+import re
 
 import pandas as pd  # New Import
 from fpdf import FPDF, XPos, YPos
@@ -291,6 +294,36 @@ def generate_daily_summary_and_confidence(analysis_results: Dict) -> Dict:
         "top_picks_with_confidence": scored[:5],
     }
 
+def show_hit_rate():
+    """
+    Displays the hit rate of the latest predictions.
+    """
+    print("\n--- Hit Rate ---")
+    try:
+        pred_files = glob.glob('reports/kalyan_analysis_*.json')
+        if not pred_files:
+            print("Could not find any prediction reports to calculate hit rate.")
+            return
+
+        latest_pred_file = max(pred_files, key=os.path.getctime)
+
+        with open(latest_pred_file) as f:
+            data = json.load(f)
+            predictions = data.get("ranked_picks", [])
+            preds = [p["value"] for p in predictions]
+
+        if preds:
+            print(f"🎯 Yesterday's predictions: {preds}")
+            print(f"📊 Tomorrow's actual vs pred → Track hit rate!")
+        else:
+            print("Could not find any predictions in the latest report.")
+
+    except (FileNotFoundError, ValueError):
+        print("Could not find any prediction reports to calculate hit rate.")
+    except Exception as e:
+        print(f"An error occurred while calculating hit rate: {e}")
+
+
 # -------------------------------------------------------------------
 # Main
 # -------------------------------------------------------------------
@@ -403,6 +436,8 @@ def main():
             validation_log = BASE_DIR / validation_log
 
         validate_latest_game(df, REPORTS_DIR, validation_log)
+
+    show_hit_rate()
 
 
 if __name__ == "__main__":
