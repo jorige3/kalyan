@@ -3,7 +3,7 @@ from typing import List
 
 import pandas as pd
 
-from src.loaders.data_loader import DataLoader
+from ..loaders.data_loader import DataLoader
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

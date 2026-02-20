@@ -1,25 +1,31 @@
+import sys
+from pathlib import Path
+
+# Add the project root to sys.path for local imports when running as a script
+if __name__ == "__main__" and __package__ is None:
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 import argparse
+import glob
 import hashlib
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
-import glob
-import os
-import re
 
 import pandas as pd  # New Import
 from fpdf import FPDF, XPos, YPos
 
-import config
-from src.analysis.explainability import explain_pick
-from src.analysis.hot_cold import HotColdAnalyzer
-from src.analysis.monte_carlo import MonteCarloAnalyzer  # New Import
-from src.analysis.sangam_analysis import SangamAnalyzer
-from src.analysis.trend_window import TrendWindowAnalyzer
-from src.engine.kalyan_engine import KalyanEngine
-from src.ux.text_templates import ReportText
+from kalyan import config
+from kalyan.src.analysis.explainability import explain_pick
+from kalyan.src.analysis.hot_cold import HotColdAnalyzer
+from kalyan.src.analysis.monte_carlo import MonteCarloAnalyzer
+from kalyan.src.analysis.sangam_analysis import SangamAnalyzer
+from kalyan.src.analysis.trend_window import TrendWindowAnalyzer
+from kalyan.src.engine.kalyan_engine import KalyanEngine
+from kalyan.src.ux.text_templates import ReportText
 
 # -------------------------------------------------------------------
 # Paths & Logging
@@ -314,7 +320,7 @@ def show_hit_rate():
 
         if preds:
             print(f"🎯 Yesterday's predictions: {preds}")
-            print(f"📊 Tomorrow's actual vs pred → Track hit rate!")
+            print("📊 Tomorrow's actual vs pred → Track hit rate!")
         else:
             print("Could not find any predictions in the latest report.")
 
@@ -331,7 +337,7 @@ def show_hit_rate():
 def main():
     parser = argparse.ArgumentParser(description=ReportText.PROJECT_TITLE)
     parser.add_argument("--date", default=datetime.now().strftime("%Y-%m-%d"))
-    parser.add_argument("--csv", default="data/kalyan.csv")
+    parser.add_argument("--csv", default=str(BASE_DIR / "data" / "kalyan.csv"))
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--no-validate", action="store_true")
     parser.add_argument("--validation-log", default="reports/validation_log_v2.csv")
@@ -376,7 +382,7 @@ def main():
     # Run Monte Carlo simulation
     mc_results = run_monte_carlo_simulation(df, summary["top_picks_with_confidence"], config.MONTE_CARLO_SIMULATIONS)
     summary["monte_carlo_results"] = mc_results
-    summary["analytical_confidence_score"] = mc_results["confidence_score"] # Use MC confidence
+    # summary["analytical_confidence_score"] = mc_results["confidence_score"] # Use MC confidence
 
     json_path = REPORTS_DIR / f"kalyan_analysis_{analysis_date:%Y-%m-%d}.json"
     write_analysis_snapshot(
@@ -429,7 +435,7 @@ def main():
         logging.info(f"📄 PDF saved to {pdf_path}")
 
     if not args.no_validate:
-        from src.analysis.validation import validate_latest_game
+        from kalyan.src.analysis.validation import validate_latest_game
 
         validation_log = Path(args.validation_log)
         if not validation_log.is_absolute():

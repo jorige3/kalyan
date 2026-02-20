@@ -2,8 +2,7 @@ import os
 
 import pandas as pd
 import pytest
-
-from src.engine.kalyan_engine import KalyanEngine
+from kalyan.src.engine.kalyan_engine import KalyanEngine
 
 
 # Fixture to create a dummy kalyan.csv for testing

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-import pandas as pd
-import os
 import logging
+import os
+
+import pandas as pd
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
