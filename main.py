@@ -20,12 +20,42 @@ from fpdf import FPDF, XPos, YPos
 
 from kalyan import config
 from kalyan.src.analysis.explainability import explain_pick
+from kalyan.src.analysis.frequency import digit_frequency
+from kalyan.src.analysis.gap import last_seen_gap
 from kalyan.src.analysis.hot_cold import HotColdAnalyzer
 from kalyan.src.analysis.monte_carlo import MonteCarloAnalyzer
 from kalyan.src.analysis.sangam_analysis import SangamAnalyzer
+from kalyan.src.analysis.scoring import normalize
 from kalyan.src.analysis.trend_window import TrendWindowAnalyzer
 from kalyan.src.engine.kalyan_engine import KalyanEngine
 from kalyan.src.ux.text_templates import ReportText
+
+
+def compute_window_score(df, window_size, column="open"):
+    df_window = df.tail(window_size)
+
+    freq = digit_frequency(df_window, column)
+    gap = pd.Series(last_seen_gap(df_window, column))
+
+    freq_norm = normalize(freq)
+    gap_norm = normalize(gap)
+
+    return 0.5 * freq_norm + 0.5 * gap_norm
+
+
+def multi_window_score(df, column="open"):
+    score_30 = compute_window_score(df, 30, column)
+    score_60 = compute_window_score(df, 60, column)
+    score_120 = compute_window_score(df, 120, column)
+
+    final_score = (
+        0.5 * score_30 +
+        0.3 * score_60 +
+        0.2 * score_120
+    )
+
+    return final_score.sort_values(ascending=False)
+
 
 # -------------------------------------------------------------------
 # Paths & Logging
@@ -445,14 +475,14 @@ def main():
 
     show_hit_rate()
 
+    df = engine.get_historical_data()
+    print("\n--- MULTI WINDOW DIGIT INTELLIGENCE ---")
+    digit_scores = multi_window_score(df, column="open")
 
-from analytics.loader import load_data
+    for digit, score in digit_scores.items():
+        print(f"Digit {digit}: {round(score,4)}")
 
-def main():
-    df = load_data()
 
-    print(df.head())
-    print("Total rows:", len(df))
 
 if __name__ == "__main__":
     main()

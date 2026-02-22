@@ -61,28 +61,42 @@ class DataLoader:
         """
         if self.csv_path.exists() and self.csv_path.stat().st_size > 0:
             try:
-                df = pd.read_csv(self.csv_path, dtype={'jodi': str, 'open_sangam': str, 'close_sangam': str})
+                df = pd.read_csv(self.csv_path, dtype={'jodi': str, 'open_panel': str, 'close_panel': str, 'open_sangam': str, 'close_sangam': str})
                 df['date'] = pd.to_datetime(df['date'])
                 df = df.sort_values(by='date').reset_index(drop=True)
 
-                if 'open' in df.columns:
-                    df['open'] = pd.to_numeric(df['open'], errors='coerce').astype('Int64')
-                if 'close' in df.columns:
-                    df['close'] = pd.to_numeric(df['close'], errors='coerce').astype('Int64')
-                
+                # Adapt to new format: open_panel, close_panel -> open_sangam, close_sangam
+                if 'open_panel' in df.columns:
+                    df.rename(columns={'open_panel': 'open_sangam'}, inplace=True)
+                if 'close_panel' in df.columns:
+                    df.rename(columns={'close_panel': 'close_sangam'}, inplace=True)
+
+                # Derive open/close from jodi if they don't exist
+                if 'open' not in df.columns or 'close' not in df.columns:
+                    if 'jodi' in df.columns:
+                        logging.info("Deriving 'open' and 'close' columns from 'jodi'.")
+                        # Ensure jodi is a string and has at least 2 characters
+                        df['jodi_str'] = df['jodi'].astype(str).str.zfill(2)
+                        df['open'] = pd.to_numeric(df['jodi_str'].str[0], errors='coerce').astype('Int64')
+                        df['close'] = pd.to_numeric(df['jodi_str'].str[1], errors='coerce').astype('Int64')
+                        df = df.drop(columns=['jodi_str'])
+                    else:
+                        raise ValueError("Cannot derive 'open' and 'close' as 'jodi' column is missing.")
+
                 if 'open_sangam' not in df.columns or 'close_sangam' not in df.columns:
-                    logging.warning("Missing sangam columns in CSV. Generating placeholders.")
-                    df['open_sangam'] = df['open'].apply(lambda x: f"{x}{random.randint(0,9)}{random.randint(0,9)}" if pd.notna(x) else None).astype(str)
-                    df['close_sangam'] = df['close'].apply(lambda x: f"{random.randint(0,9)}{x}{random.randint(0,9)}" if pd.notna(x) else None).astype(str)
+                     raise ValueError("DataFrame must contain 'open_sangam' and 'close_sangam' columns for Sangam analysis.")
                 
-                df = df.dropna(subset=['date', 'jodi', 'open_sangam', 'close_sangam'])
+                df = df.dropna(subset=['date', 'jodi', 'open', 'close', 'open_sangam', 'close_sangam'])
 
                 if not df.empty and len(df) >= 7:
                     logging.info(f"Loaded {len(df)} records from {self.csv_path}")
+                    # Ensure correct types for downstream processing
+                    df['open_sangam'] = df['open_sangam'].astype(str)
+                    df['close_sangam'] = df['close_sangam'].astype(str)
                     return df
                 else:
                     logging.warning(f"Insufficient data in {self.csv_path}. Generating dummy data.")
-            except (pd.errors.EmptyDataError, pd.errors.ParserError, KeyError) as e:
+            except (pd.errors.EmptyDataError, pd.errors.ParserError, KeyError, ValueError) as e:
                 logging.error(f"Error reading {self.csv_path}: {e}. Generating dummy data.")
             except Exception as e:
                 logging.error(f"An unexpected error occurred: {e}. Generating dummy data.")
