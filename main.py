@@ -446,5 +446,13 @@ def main():
     show_hit_rate()
 
 
+from analytics.loader import load_data
+
+def main():
+    df = load_data()
+
+    print(df.head())
+    print("Total rows:", len(df))
+
 if __name__ == "__main__":
     main()

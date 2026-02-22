@@ -578,3 +578,14 @@ Analytical Confidence : 10/10
 📊 Tomorrow's actual vs pred → Track hit rate!
 Reading predictions from: reports/kalyan_analysis_2026-02-22.json
 ✅ Daily Kalyan report sent to Telegram!
+To github.com:jorige3/kalyan.git
+   5fef5bf..303aee8  main -> main
+        date  open_panel  jodi  close_panel   sangam  open  close
+0 2012-12-31         799    51          155  799-155     9      5
+1 2013-01-01         345    29          360  345-360     5      0
+2 2013-01-02         339    50          569  339-569     9      9
+3 2013-01-03         137    18          468  137-468     7      8
+4 2013-01-04         369    84          680  369-680     9      0
+Total rows: 3871
+Reading predictions from: reports/kalyan_analysis_2026-02-22.json
+✅ Daily Kalyan report sent to Telegram!

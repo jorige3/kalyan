@@ -20,7 +20,8 @@ def scrape_historical():
     Scrapes the Kalyan panel chart table and extracts date, open, close, jodi, and panel data.
     Parses cell content that contains combined data like: "19,990,559,579-82"
     """
-    url = 'https://dpboss.boston/panel-chart-record/kalyan.php#bottom'
+    url = 'url = 'https://dpboss.boston/panel-chart-record/kalyan.php?full_chart'
+'
     try:
         resp = requests.get(url, timeout=10)
         resp.raise_for_status()
