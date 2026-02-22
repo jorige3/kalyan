@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def normalize(series):
     # Prevent division by zero
     if series.max() == series.min():

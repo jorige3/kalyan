@@ -2,6 +2,7 @@ from .frequency import digit_frequency
 from .gap import last_seen_gap
 from .scoring import weighted_score
 
+
 def run_analysis(df):
     result = {}
 

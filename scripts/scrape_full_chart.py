@@ -1,10 +1,11 @@
+import logging
+import os
+import re
+from datetime import datetime, timedelta
+
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
-from datetime import datetime, timedelta
-import re
-import os
-import logging
 
 URL = "https://dpboss.boston/panel-chart-record/kalyan.php?full_chart"
 CSV_PATH = "data/kalyan.csv"
@@ -53,9 +54,6 @@ def scrape():
             open_panel = chunk[0]
             jodi = chunk[1]
             close_panel = chunk[2]
-
-            open_digit = open_panel[-1]
-            close_digit = close_panel[-1]
 
             record = {
                 "date": current_date.strftime("%Y-%m-%d"),

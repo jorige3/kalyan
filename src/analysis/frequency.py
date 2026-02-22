@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def digit_frequency(df, column):
     """
     Returns frequency count of digits 0–9

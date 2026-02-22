@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def load_data(path="data/kalyan.csv", with_digits=True):
     print("LOADING FILE:", path)
 
