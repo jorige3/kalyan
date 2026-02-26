@@ -331,34 +331,7 @@ def generate_daily_summary_and_confidence(analysis_results: Dict) -> Dict:
         "top_picks_with_confidence": scored[:5],
     }
 
-def show_hit_rate():
-    """
-    Displays the hit rate of the latest predictions.
-    """
-    print("\n--- Hit Rate ---")
-    try:
-        pred_files = glob.glob('reports/kalyan_analysis_*.json')
-        if not pred_files:
-            print("Could not find any prediction reports to calculate hit rate.")
-            return
 
-        latest_pred_file = max(pred_files, key=os.path.getctime)
-
-        with open(latest_pred_file) as f:
-            data = json.load(f)
-            predictions = data.get("ranked_picks", [])
-            preds = [p["value"] for p in predictions]
-
-        if preds:
-            print(f"🎯 Yesterday's predictions: {preds}")
-            print("📊 Tomorrow's actual vs pred → Track hit rate!")
-        else:
-            print("Could not find any predictions in the latest report.")
-
-    except (FileNotFoundError, ValueError):
-        print("Could not find any prediction reports to calculate hit rate.")
-    except Exception as e:
-        print(f"An error occurred while calculating hit rate: {e}")
 
 
 # -------------------------------------------------------------------
@@ -474,7 +447,10 @@ def main():
 
         validate_latest_game(df, REPORTS_DIR, validation_log)
 
-    show_hit_rate()
+    # After analysis and report generation, track the hit rate
+    from kalyan.src.analysis.hit_tracker import track_hit_rate
+    # Note: track_hit_rate now checks previous day's predictions against current day's actuals
+    track_hit_rate(df, analysis_date)
 
     df = engine.get_historical_data()
     print("\n--- MULTI WINDOW DIGIT INTELLIGENCE ---")
