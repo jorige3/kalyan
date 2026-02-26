@@ -6,31 +6,27 @@ if __name__ == "__main__" and __package__ is None:
     sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import argparse
-import glob
 import hashlib
 import json
 import logging
-import os
-
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
 
-import numpy as np
 import pandas as pd  # New Import
 from fpdf import FPDF, XPos, YPos
 
-from kalyan import config
-from kalyan.src.analysis.explainability import explain_pick
-from kalyan.src.analysis.frequency import digit_frequency
-from kalyan.src.analysis.gap import last_seen_gap
-from kalyan.src.analysis.hot_cold import HotColdAnalyzer
-from kalyan.src.analysis.monte_carlo import MonteCarloAnalyzer
-from kalyan.src.analysis.sangam_analysis import SangamAnalyzer
-from kalyan.src.analysis.scoring import normalize
-from kalyan.src.analysis.trend_window import TrendWindowAnalyzer
-from kalyan.src.engine.kalyan_engine import KalyanEngine
-from kalyan.src.ux.text_templates import ReportText
+import config
+from src.analysis.explainability import explain_pick
+from src.analysis.frequency import digit_frequency
+from src.analysis.gap import last_seen_gap
+from src.analysis.hot_cold import HotColdAnalyzer
+from src.analysis.monte_carlo import MonteCarloAnalyzer
+from src.analysis.sangam_analysis import SangamAnalyzer
+from src.analysis.scoring import normalize
+from src.analysis.trend_window import TrendWindowAnalyzer
+from src.engine.kalyan_engine import KalyanEngine
+from src.ux.text_templates import ReportText
 
 
 def compute_window_score(df, window_size, column="open"):
@@ -439,7 +435,7 @@ def main():
         logging.info(f"📄 PDF saved to {pdf_path}")
 
     if not args.no_validate:
-        from kalyan.src.analysis.validation import validate_latest_game
+        from src.analysis.validation import validate_latest_game
 
         validation_log = Path(args.validation_log)
         if not validation_log.is_absolute():
@@ -448,7 +444,7 @@ def main():
         validate_latest_game(df, REPORTS_DIR, validation_log)
 
     # After analysis and report generation, track the hit rate
-    from kalyan.src.analysis.hit_tracker import track_hit_rate
+    from src.analysis.hit_tracker import track_hit_rate
     # Note: track_hit_rate now checks previous day's predictions against current day's actuals
     track_hit_rate(df, analysis_date)
 

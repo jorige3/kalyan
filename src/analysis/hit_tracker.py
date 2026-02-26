@@ -1,16 +1,9 @@
-import pandas as pd
-from datetime import datetime, timedelta
-import os
-import logging
-
-LOG_FILE = "reports/hit_log.csv"
-
-import pandas as pd
-from datetime import datetime, timedelta
-import os
-import logging
 import json
-import glob
+import logging
+import os
+from datetime import datetime, timedelta
+
+import pandas as pd
 
 LOG_FILE = "reports/hit_log.csv"
 REPORTS_DIR = "reports"

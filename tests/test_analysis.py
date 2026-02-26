@@ -3,10 +3,10 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
-from kalyan.main import generate_daily_summary_and_confidence  # Import the function for testing
-from kalyan.src.analysis.hot_cold import HotColdAnalyzer
-from kalyan.src.analysis.sangam_analysis import SangamAnalyzer
-from kalyan.src.analysis.trend_window import TrendWindowAnalyzer
+from main import generate_daily_summary_and_confidence  # Import the function for testing
+from src.analysis.hot_cold import HotColdAnalyzer
+from src.analysis.sangam_analysis import SangamAnalyzer
+from src.analysis.trend_window import TrendWindowAnalyzer
 
 
 @pytest.fixture
@@ -158,9 +158,13 @@ def test_sangam_analyzer_get_due_sangams(dummy_dataframe_for_analysis):
 
 @pytest.fixture
 
+
+
 def mock_config_weights():
 
-    with patch('kalyan.config.SCORING_WEIGHTS', {
+
+
+    with patch('config.SCORING_WEIGHTS', {
         "HIGH_FREQUENCY_JODI": 1.0,
         "TREND_ALIGNED_JODI": 1.0,
         "EXTENDED_ABSENCE_JODI": 1.0,
