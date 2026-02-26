@@ -23,7 +23,7 @@ class Backtester:
             # Instantiate analyzers with the training data
             hot_cold_analyzer = HotColdAnalyzer(train_df)
             trend_analyzer = TrendWindowAnalyzer(train_df)
-            sangam_analyzer = SangamAnalyzer(train_df)
+            # sangam_analyzer = SangamAnalyzer(train_df)
 
             # Perform analysis to get signals
             analysis_results = {
@@ -33,10 +33,10 @@ class Backtester:
                 "exhausted_jodis": hot_cold_analyzer.get_exhausted_numbers()['exhausted_jodis'],
                 "trend_due_jodis": trend_analyzer.get_due_cycles_by_last_appearance()['due_jodis'],
                 "trend_exhausted_jodis": trend_analyzer.get_exhausted_numbers_by_streak()['exhausted_jodis'],
-                "hot_open_sangams": sangam_analyzer.get_hot_sangams()['hot_open_sangams'],
-                "hot_close_sangams": sangam_analyzer.get_hot_sangams()['hot_close_sangams'],
-                "due_open_sangams": sangam_analyzer.get_due_sangams()['due_open_sangams'],
-                "due_close_sangams": sangam_analyzer.get_due_sangams()['due_close_sangams'],
+                "hot_open_sangams": {}, # sangam_analyzer.get_hot_sangams()['hot_open_sangams'],
+                "hot_close_sangams": {}, # sangam_analyzer.get_hot_sangams()['hot_close_sangams'],
+                "due_open_sangams": {}, # sangam_analyzer.get_due_sangams()['due_open_sangams'],
+                "due_close_sangams": {}, # sangam_analyzer.get_due_sangams()['due_close_sangams'],
             }
 
             # Generate daily summary and confidence to get top picks

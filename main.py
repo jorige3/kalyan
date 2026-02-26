@@ -253,8 +253,7 @@ def generate_daily_summary_and_confidence(analysis_results: Dict) -> Dict:
     all_picks = set()
     for key, value in analysis_results.items():
         # Handle jodis and sangams that are now dictionaries
-        if key in ["hot_jodis", "due_jodis", "trend_due_jodis", "exhausted_jodis",
-                   "hot_open_sangams", "hot_close_sangams", "due_open_sangams", "due_close_sangams"]:
+        if key in ["hot_jodis", "due_jodis", "trend_due_jodis", "exhausted_jodis"]:
             if isinstance(value, dict):
                 all_picks.update(value.keys())
             elif isinstance(value, list): # Fallback for any unexpected list results
