@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+
 from main import generate_daily_summary_and_confidence  # Import the function for testing
 from src.analysis.hot_cold import HotColdAnalyzer
 from src.analysis.sangam_analysis import SangamAnalyzer
