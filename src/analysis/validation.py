@@ -27,6 +27,10 @@ def _load_logged_dates(log_path: Path) -> set:
     if not log_path.exists():
         return set()
     with open(log_path, "r", newline="") as f:
+        # Check if the file is empty after opening
+        if not f.read(1):  # Read one character; if empty, returns ''
+            return set()
+        f.seek(0)  # Go back to the beginning of the file
         reader = csv.DictReader(f)
         return {row.get("date") for row in reader if row.get("date")}
 
