@@ -1,11 +1,11 @@
-import glob
 import os
 import re
 from datetime import datetime
 
 import pandas as pd
-import requests
 from dotenv import load_dotenv
+
+from src.utils.telegram_sender import send_telegram_message # New import
 
 load_dotenv()
 
@@ -37,11 +37,24 @@ def send_daily_report():
             print(f"⚠️ Could not read predictions, using fallback. Error: {e}")
 
         # 3. Latest results from CSV
-        latest_results = "No recent data"
+        formatted_latest_results = "No recent data"
         try:
             with open('data/kalyan.csv', 'r') as f:
                 lines = f.readlines()
-                latest_results = ''.join(lines[-3:]).strip()
+                if len(lines) > 1: # Assuming header
+                    parsed_results = []
+                    for line in lines[-3:]:
+                        parts = line.strip().split(',')
+                        if len(parts) >= 5:
+                            date = parts[0]
+                            jodi = parts[4]
+                            parsed_results.append(f"Date: {date}, Jodi: {jodi}")
+                    if parsed_results:
+                        formatted_latest_results = '\n'.join(parsed_results)
+                    else:
+                        formatted_latest_results = "No valid recent data found"
+                else:
+                    formatted_latest_results = "Not enough data in kalyan.csv"
         except FileNotFoundError:
             pass # It's okay if data file doesn't exist yet
 
@@ -51,31 +64,19 @@ def send_daily_report():
 🚀 KALYAN AI PREDICTIONS | {datetime.now().strftime('%d-%b-%Y %H:%M')}
 
 📊 HIT RATE: {hit_rate:.1f}%
-🎯 TOP PREDICTIONS: {', '.join(predictions[:4])}
+🎯 TOP PREDICTIONS: {', '.join(predictions[:5])}
 
 📈 LATEST RESULTS:
-{latest_results}
+{formatted_latest_results}
 
 🔗 DASHBOARD: github.com/jorige3/kalyan
-💻 Ollama: qwen2.5-coder:1.5b running
         """
 
         # 5. Send via Telegram (.env secure)
-        bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
-        chat_id = os.getenv('TELEGRAM_CHAT_ID')
-        
-        if not bot_token or not chat_id:
-            print("❌ .env missing! Create .env with TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID")
-            return
-
-        url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
-        data = {'chat_id': chat_id, 'text': report, 'parse_mode': 'HTML'}
-        response = requests.post(url, data=data)
-        
-        if response.status_code == 200:
+        if send_telegram_message(report):
             print("✅ Daily Kalyan report sent to Telegram!")
         else:
-            print(f"❌ Telegram failed: {response.status_code} - {response.text}")
+            print("❌ Daily Kalyan report Telegram failed!")
 
     except Exception as e:
         print(f"❌ Report failed: {e}")

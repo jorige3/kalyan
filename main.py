@@ -15,6 +15,8 @@ from typing import Dict, List
 
 import pandas as pd  # New Import
 from fpdf import FPDF, XPos, YPos
+import sys # New import
+import io # New import
 
 import config
 from src.analysis.explainability import explain_pick
@@ -27,6 +29,7 @@ from src.analysis.scoring import normalize
 from src.analysis.trend_window import TrendWindowAnalyzer
 from src.engine.kalyan_engine import KalyanEngine
 from src.ux.text_templates import ReportText
+from src.utils.telegram_sender import send_telegram_message # New import
 
 
 def compute_window_score(df, window_size, column="open"):
@@ -335,6 +338,11 @@ def generate_daily_summary_and_confidence(analysis_results: Dict) -> Dict:
 # -------------------------------------------------------------------
 
 def main():
+    # Capture stdout
+    old_stdout = sys.stdout
+    redirected_output = io.StringIO()
+    sys.stdout = redirected_output
+
     parser = argparse.ArgumentParser(description=ReportText.PROJECT_TITLE)
     parser.add_argument("--date", default=datetime.now().strftime("%Y-%m-%d"))
     parser.add_argument("--csv", default=str(BASE_DIR / "data" / "kalyan.csv"))
@@ -351,6 +359,7 @@ def main():
 
     if df.empty:
         logging.error("No data available.")
+        sys.stdout = old_stdout # Restore stdout before returning
         return
 
     # Dynamically run the analysis pipeline from config
@@ -454,6 +463,15 @@ def main():
 
     for digit, score in digit_scores.items():
         print(f"Digit {digit}: {round(score,4)}")
+    
+    # Restore stdout and send captured output to Telegram
+    sys.stdout = old_stdout
+    telegram_message = redirected_output.getvalue()
+    print(telegram_message) # Also print to console
+    send_telegram_message(telegram_message)
+
+if __name__ == "__main__":
+    main()
 
 
 
