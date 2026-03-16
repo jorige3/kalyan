@@ -1,7 +1,21 @@
 #!/bin/bash
-cd /home/kishore/kalyan
-source venv/bin/activate
-python scripts/scrape_full_chart.py 
-python main.py >> logs/daily.log 2>&1      # ← kpred = python main.py!
-git add . && git commit -m "Daily update $(date '+%Y-%m-%d')" && git push >> logs/daily.log 2>&1
+# Kalyan Daily Analytical Run
+# This script orchestrates the daily data analysis and reporting.
 
+PROJECT_DIR="/home/kishore/kalyan"
+cd "$PROJECT_DIR"
+
+# Activate virtual environment if it exists
+if [ -d "venv" ]; then
+    source venv/bin/activate
+fi
+
+# Run the analytical workflow
+# --force: override existing report for today
+# --backtest-days: evaluate model on recent performance
+python3 main.py --backtest-days 60 --force
+
+# Optional: Automatic commit of the daily report
+# git add reports/*.txt logs/*.log
+# git commit -m "Daily Analytical Report - $(date '+%Y-%m-%d')"
+# git push
