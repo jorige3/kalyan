@@ -6,32 +6,33 @@ import argparse
 import config
 from src.data.loader import DataLoader
 from src.models.heat_model import HeatModel
-from src.models.digit_momentum_model import DigitMomentumModel
-from src.models.gap_cluster_model import GapClusterModel
-from src.models.mirror_pair_model import MirrorPairModel
+from src.models.matrix_model import MatrixModel
+from src.models.momentum_model import MomentumModel
 from src.models.ensemble_model import EnsembleModel
 from src.backtest.rolling_backtester import RollingBacktester
-from src.reporting.report_generator import ReportGenerator
-from src.reporting.telegram_sender import TelegramSender
 from src.utils.logger import setup_logger
 
 logger = setup_logger("main")
 
+def get_confidence_score(hit_rate):
+    """Maps hit rate to a 1-10 confidence score."""
+    if hit_rate >= 0.25: return "10/10"
+    if hit_rate >= 0.20: return "9/10"
+    if hit_rate >= 0.15: return "8/10"
+    if hit_rate >= 0.12: return "7/10"
+    if hit_rate >= 0.10: return "6/10"
+    if hit_rate >= 0.08: return "5/10"
+    if hit_rate >= 0.05: return "4/10"
+    if hit_rate >= 0.03: return "3/10"
+    return "2/10"
+
 def main():
-    parser = argparse.ArgumentParser(description="Kalyan Ensemble Prediction System")
-    parser.add_argument("--force", action="store_true", help="Force execution even if report exists")
-    parser.add_argument("--no-telegram", action="store_true", help="Do not send telegram message")
-    parser.add_argument("--backtest-days", type=int, default=config.BACKTEST_WINDOW_DAYS, help="Number of days for backtest")
+    parser = argparse.ArgumentParser(description="Kalyan Quantitative Ensemble System")
+    parser.add_argument("--model", type=str, default=config.MODEL_TYPE, help="Model type: heat, matrix, ensemble")
+    parser.add_argument("--backtest-days", type=int, default=config.BACKTEST_WINDOW_DAYS, help="Days for backtest")
     args = parser.parse_args()
 
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    report_path = Path(config.REPORTS_DIR) / f"kalyan_report_{today_str}.txt"
-
-    if report_path.exists() and not args.force:
-        logger.info(f"Report for {today_str} already exists. Skipping execution. Use --force to override.")
-        return
-
-    logger.info("Starting Kalyan Ensemble Analytical Workflow")
+    logger.info(f"Starting Kalyan Analysis Workflow [Model: {args.model}]")
 
     # 1. Load Data
     loader = DataLoader(config.DATA_CSV_PATH)
@@ -41,45 +42,51 @@ def main():
         logger.error(f"Failed to load data: {e}")
         sys.exit(1)
 
-    # 2. Initialize Individual Models
-    sub_models = {
-        "heat_model": HeatModel(
-            recent_window=config.RECENT_WINDOW, 
-            long_term_window=config.LONG_TERM_WINDOW
-        ),
-        "digit_model": DigitMomentumModel(window=config.RECENT_WINDOW),
-        "gap_model": GapClusterModel(min_gap=config.GAP_MIN, max_gap=config.GAP_MAX),
-        "mirror_model": MirrorPairModel(window=config.MIRROR_WINDOW)
-    }
+    # 2. Initialize Models
+    heat_model = HeatModel(recent_window=config.RECENT_WINDOW, long_term_window=config.LONG_TERM_WINDOW)
+    matrix_model = MatrixModel(window=config.MATRIX_WINDOW_DAYS)
+    momentum_model = MomentumModel(window=config.MOMENTUM_WINDOW)
 
-    # 3. Initialize Ensemble Model
-    ensemble_model = EnsembleModel(models=sub_models, weights=config.ENSEMBLE_WEIGHTS)
+    # 3. Select Model
+    if args.model == "heat":
+        selected_model = heat_model
+    elif args.model == "matrix":
+        selected_model = matrix_model
+    else:
+        selected_model = EnsembleModel(
+            heat_model=heat_model,
+            matrix_model=matrix_model,
+            momentum_model=momentum_model,
+            weights=config.ENSEMBLE_WEIGHTS
+        )
 
-    # 4. Run Rolling Backtest (to get historical hit rate)
-    logger.info(f"Running rolling backtest for ensemble over {args.backtest_days} days...")
-    backtester = RollingBacktester(ensemble_model, window_days=args.backtest_days)
-    backtest_metrics = backtester.run(df)
+    # 4. Run Backtest (Last 365 days for confidence)
+    logger.info(f"Evaluating model confidence via {args.backtest_days}-day rolling backtest...")
+    backtester = RollingBacktester(selected_model, window_days=args.backtest_days)
+    metrics = backtester.run(df)
+    
+    hit_rate = metrics.get('hit_rate_top_10', 0)
+    confidence = get_confidence_score(hit_rate)
 
     # 5. Generate Predictions for today
-    logger.info("Generating ensemble predictions for today...")
-    predictions = ensemble_model.predict(df)
-
-    # 6. Generate Report
-    logger.info("Generating report...")
-    report_gen = ReportGenerator(config.REPORTS_DIR)
-    report_str = report_gen.generate_report(predictions, backtest_metrics)
+    logger.info("Generating final predictions...")
+    predictions = selected_model.predict(df)
     
-    # Update report footer to reflect ensemble
-    report_str = report_str.replace("Analysis based on Heat Score Model.", "Analysis based on Ensemble of 4 Quantitative Models.")
+    top_5 = predictions.head(5)['jodi'].tolist()
+    top_10 = predictions.head(10)['jodi'].tolist()
 
-    # 7. Send Telegram Notification
-    if not args.no_telegram:
-        logger.info("Sending Telegram notification...")
-        sender = TelegramSender()
-        sender.send_message(report_str)
+    # 6. Output Formatting (Phase 8)
+    print("\n" + "="*40)
+    print(f"KALYAN {args.model.upper()} ANALYSIS")
+    print("="*40)
+    print("\nTop 5:")
+    print(", ".join(top_5))
+    print("\nTop 10:")
+    print(", ".join(top_10))
+    print(f"\nConfidence: {confidence}")
+    print("="*40 + "\n")
 
-    print(report_str) # Display in console
-    logger.info("Ensemble Workflow completed successfully.")
+    logger.info("Workflow completed successfully.")
 
 if __name__ == "__main__":
     main()

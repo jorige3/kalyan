@@ -5,18 +5,26 @@ logger = setup_logger(__name__)
 
 class EnsembleModel:
     """
-    Ensemble Model combining multiple quantitative models.
-    final_score = 0.35 * heat_model + 0.25 * digit_model + 0.20 * gap_model + 0.20 * mirror_model
+    Ensemble Model combining HeatModel, MatrixModel, and MomentumModel.
+    final_score = 0.40 * heat_score + 0.35 * matrix_score + 0.25 * momentum_score
     """
     
-    def __init__(self, models: dict, weights: dict):
-        self.models = models
-        self.weights = weights
+    def __init__(self, heat_model, matrix_model, momentum_model, weights=None):
+        self.models = {
+            "heat": heat_model,
+            "matrix": matrix_model,
+            "momentum": momentum_model
+        }
+        self.weights = weights or {
+            "heat": 0.40,
+            "matrix": 0.35,
+            "momentum": 0.25
+        }
         self.all_jodis = [f"{i:02d}" for i in range(100)]
         
     def predict(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Combines predictions from multiple models.
+        Combines predictions from specialized models.
         """
         if df.empty:
             return pd.DataFrame()
@@ -30,14 +38,23 @@ class EnsembleModel:
                 
             predictions = model.predict(df)
             if predictions.empty:
+                logger.warning(f"Model {name} returned no predictions.")
                 continue
                 
+            # Ensure jodi is string and 2 digits
+            predictions['jodi'] = predictions['jodi'].astype(str).str.zfill(2)
+            
             # Normalize scores to [0, 1] for fair weight distribution
-            if predictions['score'].max() > 0:
-                predictions['score'] = predictions['score'] / predictions['score'].max()
+            max_score = predictions['score'].max()
+            min_score = predictions['score'].min()
+            
+            if max_score > min_score:
+                norm_scores = (predictions['score'] - min_score) / (max_score - min_score)
+            else:
+                norm_scores = predictions['score'] / (max_score if max_score > 0 else 1.0)
             
             # Map predictions back to all jodis
-            score_map = predictions.set_index('jodi')['score'].reindex(self.all_jodis, fill_value=0.0)
+            score_map = pd.Series(norm_scores.values, index=predictions['jodi']).reindex(self.all_jodis, fill_value=0.0)
             combined_scores += score_map * weight
             
         final_predictions = pd.DataFrame({

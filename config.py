@@ -5,13 +5,21 @@ RECENT_WINDOW = 30 # Days
 LONG_TERM_WINDOW = 180 # Days
 MIN_FREQUENCY_THRESHOLD = 0.01
 
+# Model Selection
+MODEL_TYPE = "ensemble" # Options: "heat", "matrix", "ensemble"
+
 # Ensemble Weights
 ENSEMBLE_WEIGHTS = {
-    "heat_model": 0.35,
-    "digit_model": 0.25,
-    "gap_model": 0.20,
-    "mirror_model": 0.20
+    "heat": 0.40,
+    "matrix": 0.35,
+    "momentum": 0.25
 }
+
+# Matrix Model Parameters
+MATRIX_WINDOW_DAYS = 60
+
+# Momentum Parameters
+MOMENTUM_WINDOW = 7
 
 # Heat Model Parameters
 HEAT_WEIGHTS = {
