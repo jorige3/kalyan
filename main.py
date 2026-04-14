@@ -10,6 +10,9 @@ from src.models.matrix_model import MatrixModel
 from src.models.momentum_model import MomentumModel
 from src.models.ensemble_model import EnsembleModel
 from src.backtest.rolling_backtester import RollingBacktester
+from src.reporting.report_generator import ReportGenerator
+from src.reporting.telegram_sender import TelegramSender
+from scripts.scrape_kalyan import scrape_kalyan
 from src.utils.logger import setup_logger
 
 logger = setup_logger("main")
@@ -30,11 +33,29 @@ def main():
     parser = argparse.ArgumentParser(description="Kalyan Quantitative Ensemble System")
     parser.add_argument("--model", type=str, default=config.MODEL_TYPE, help="Model type: heat, matrix, ensemble")
     parser.add_argument("--backtest-days", type=int, default=config.BACKTEST_WINDOW_DAYS, help="Days for backtest")
+    parser.add_argument("--force", action="store_true", help="Force run even if report exists")
+    parser.add_argument("--scrape", action="store_true", default=True, help="Run scraper before analysis")
+    parser.add_argument("--no-scrape", action="store_false", dest="scrape", help="Skip scraper")
     args = parser.parse_args()
+
+    # 0. Check if report already exists for today
+    file_date = datetime.now().strftime("%Y-%m-%d")
+    report_path = Path(config.REPORTS_DIR) / f"kalyan_report_{file_date}.txt"
+    if report_path.exists() and not args.force:
+        logger.info(f"Report for {file_date} already exists. Skipping execution. Use --force to override.")
+        return
 
     logger.info(f"Starting Kalyan Analysis Workflow [Model: {args.model}]")
 
-    # 1. Load Data
+    # 1. Scrape data if requested
+    if args.scrape:
+        logger.info("Running scraper...")
+        try:
+            scrape_kalyan()
+        except Exception as e:
+            logger.error(f"Scraper failed: {e}. Proceeding with existing data.")
+
+    # 2. Load Data
     loader = DataLoader(config.DATA_CSV_PATH)
     try:
         df = loader.load_data()
@@ -42,12 +63,12 @@ def main():
         logger.error(f"Failed to load data: {e}")
         sys.exit(1)
 
-    # 2. Initialize Models
+    # 3. Initialize Models
     heat_model = HeatModel(recent_window=config.RECENT_WINDOW, long_term_window=config.LONG_TERM_WINDOW)
     matrix_model = MatrixModel(window=config.MATRIX_WINDOW_DAYS)
     momentum_model = MomentumModel(window=config.MOMENTUM_WINDOW)
 
-    # 3. Select Model
+    # 4. Select Model
     if args.model == "heat":
         selected_model = heat_model
     elif args.model == "matrix":
@@ -60,7 +81,7 @@ def main():
             weights=config.ENSEMBLE_WEIGHTS
         )
 
-    # 4. Run Backtest (Last 365 days for confidence)
+    # 5. Run Backtest (Last 365 days for confidence)
     logger.info(f"Evaluating model confidence via {args.backtest_days}-day rolling backtest...")
     backtester = RollingBacktester(selected_model, window_days=args.backtest_days)
     metrics = backtester.run(df)
@@ -68,14 +89,24 @@ def main():
     hit_rate = metrics.get('hit_rate_top_10', 0)
     confidence = get_confidence_score(hit_rate)
 
-    # 5. Generate Predictions for today
+    # 6. Generate Predictions for today
     logger.info("Generating final predictions...")
     predictions = selected_model.predict(df)
     
+    # 7. Generate and Save Report
+    logger.info("Generating report...")
+    report_gen = ReportGenerator(output_dir=config.REPORTS_DIR)
+    report_text = report_gen.generate_report(predictions, metrics)
+
+    # 8. Send Telegram Notification
+    logger.info("Sending Telegram notification...")
+    telegram = TelegramSender()
+    telegram.send_message(report_text)
+
+    # 9. Console Output
     top_5 = predictions.head(5)['jodi'].tolist()
     top_10 = predictions.head(10)['jodi'].tolist()
 
-    # 6. Output Formatting (Phase 8)
     print("\n" + "="*40)
     print(f"KALYAN {args.model.upper()} ANALYSIS")
     print("="*40)

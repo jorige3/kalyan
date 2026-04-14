@@ -19,3 +19,4 @@ python3 main.py --backtest-days 60 --force
 # git add reports/*.txt logs/*.log
 # git commit -m "Daily Analytical Report - $(date '+%Y-%m-%d')"
 # git push
+python -c "import pandas as pd; df=pd.read_csv('~/kalyan/data/kalyan.csv'); df[['date','jodi']].to_csv('~/MatkaAnalyzerPro/matka_analyzer/data/kalyan.csv',index=False)"

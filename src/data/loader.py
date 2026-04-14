@@ -36,6 +36,14 @@ class DataLoader:
                 
             # Derived columns for easier analysis
             df['jodi'] = df['jodi'].str.zfill(2)
+            
+            # Filter out non-numeric jodi values (like 'xx')
+            numeric_mask = df['jodi'].str.isnumeric()
+            if (~numeric_mask).any():
+                invalid_count = (~numeric_mask).sum()
+                logger.warning(f"Dropping {invalid_count} rows with non-numeric jodi: {df.loc[~numeric_mask, 'jodi'].unique()}")
+                df = df[numeric_mask].copy()
+                
             df['open_digit'] = df['jodi'].str[0].astype(int)
             df['close_digit'] = df['jodi'].str[1].astype(int)
             
