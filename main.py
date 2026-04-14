@@ -9,6 +9,8 @@ from src.backtest.rolling_backtester import RollingBacktester
 from src.data.loader import DataLoader
 from src.models.ensemble_model import EnsembleModel
 from src.models.heat_model import HeatModel
+from src.models.markov_model import MarkovModel
+from src.models.markov_v2_model import MarkovV2Model
 from src.models.matrix_model import MatrixModel
 from src.models.momentum_model import MomentumModel
 from src.reporting.report_generator import ReportGenerator
@@ -87,17 +89,25 @@ def main():
     )
     matrix_model = MatrixModel(window=config.MATRIX_WINDOW_DAYS)
     momentum_model = MomentumModel(window=config.MOMENTUM_WINDOW)
+    markov_model = MarkovModel()
+    markov_v2_model = MarkovV2Model()
 
     # 4. Select Model
     if args.model == "heat":
         selected_model = heat_model
     elif args.model == "matrix":
         selected_model = matrix_model
+    elif args.model == "markov":
+        selected_model = markov_model
+    elif args.model == "markov_v2":
+        selected_model = markov_v2_model
     else:
         selected_model = EnsembleModel(
             heat_model=heat_model,
             matrix_model=matrix_model,
             momentum_model=momentum_model,
+            markov_model=markov_model,
+            markov_v2_model=markov_v2_model,
             weights=config.ENSEMBLE_WEIGHTS,
         )
 

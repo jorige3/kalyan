@@ -7,13 +7,25 @@ logger = setup_logger(__name__)
 
 class EnsembleModel:
     """
-    Ensemble Model combining HeatModel, MatrixModel, and MomentumModel.
-    final_score = 0.40 * heat_score + 0.35 * matrix_score + 0.25 * momentum_score
+    Ensemble Model combining Heat, Matrix, Momentum, Markov v1, and Markov v2.
+    final_score = weighted sum of normalized model scores.
     """
 
-    def __init__(self, heat_model, matrix_model, momentum_model, weights=None):
-        self.models = {"heat": heat_model, "matrix": matrix_model, "momentum": momentum_model}
-        self.weights = weights or {"heat": 0.40, "matrix": 0.35, "momentum": 0.25}
+    def __init__(self, heat_model, matrix_model, momentum_model, markov_model=None, markov_v2_model=None, weights=None):
+        self.models = {
+            "heat": heat_model, 
+            "matrix": matrix_model, 
+            "momentum": momentum_model,
+            "markov": markov_model,
+            "markov_v2": markov_v2_model
+        }
+        self.weights = weights or {
+            "heat": 0.25, 
+            "matrix": 0.25, 
+            "momentum": 0.15, 
+            "markov": 0.10,
+            "markov_v2": 0.25
+        }
         self.all_jodis = [f"{i:02d}" for i in range(100)]
 
     def predict(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -26,6 +38,9 @@ class EnsembleModel:
         combined_scores = pd.Series(0.0, index=self.all_jodis)
 
         for name, model in self.models.items():
+            if model is None:
+                continue
+                
             weight = self.weights.get(name, 0.0)
             if weight == 0:
                 continue

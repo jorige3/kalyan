@@ -6,10 +6,16 @@ LONG_TERM_WINDOW = 180  # Days
 MIN_FREQUENCY_THRESHOLD = 0.01
 
 # Model Selection
-MODEL_TYPE = "ensemble"  # Options: "heat", "matrix", "ensemble"
+MODEL_TYPE = "ensemble"  # Options: "heat", "matrix", "markov", "markov_v2", "ensemble"
 
 # Ensemble Weights
-ENSEMBLE_WEIGHTS = {"heat": 0.40, "matrix": 0.35, "momentum": 0.25}
+ENSEMBLE_WEIGHTS = {
+    "heat": 0.25,
+    "matrix": 0.25,
+    "momentum": 0.15,
+    "markov": 0.10,
+    "markov_v2": 0.25
+}
 
 # Matrix Model Parameters
 MATRIX_WINDOW_DAYS = 60

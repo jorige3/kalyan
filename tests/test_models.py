@@ -3,6 +3,8 @@ import pytest
 
 from src.models.ensemble_model import EnsembleModel
 from src.models.heat_model import HeatModel
+from src.models.markov_model import MarkovModel
+from src.models.markov_v2_model import MarkovV2Model
 from src.models.matrix_model import MatrixModel
 from src.models.momentum_model import MomentumModel
 
@@ -45,7 +47,9 @@ def test_ensemble_model(sample_df):
     h = HeatModel()
     ma = MatrixModel()
     mo = MomentumModel()
-    ensemble = EnsembleModel(h, ma, mo)
+    mk1 = MarkovModel()
+    mk2 = MarkovV2Model()
+    ensemble = EnsembleModel(h, ma, mo, mk1, mk2)
     preds = ensemble.predict(sample_df)
     assert not preds.empty
     assert preds.iloc[0]["rank"] == 1
