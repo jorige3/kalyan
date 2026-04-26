@@ -1,22 +1,25 @@
 #!/bin/bash
-# Kalyan Daily Analytical Run
-# This script orchestrates the daily data analysis and reporting.
+# Kalyan Daily Analytical Run (Cron-Safe)
+# Runs daily analysis at 8 PM via cron
 
 PROJECT_DIR="/home/kishore/kalyan"
-cd "$PROJECT_DIR"
+cd "$PROJECT_DIR" || exit 1
 
-# Activate virtual environment if it exists
-if [ -d "venv" ]; then
-    source venv/bin/activate
-fi
+# Use full venv Python path (cron ignores 'source activate')
+VENV_PYTHON="$PROJECT_DIR/venv/bin/python"
 
-# Run the analytical workflow
-# --force: override existing report for today
-# --backtest-days: evaluate model on recent performance
-python3 main.py --backtest-days 60 --force
+# Run analytical workflow with backtest
+"$VENV_PYTHON" main.py --backtest-days 60 --force
 
-# Optional: Automatic commit of the daily report
-# git add reports/*.txt logs/*.log
-# git commit -m "Daily Analytical Report - $(date '+%Y-%m-%d')"
-# git push
-python -c "import pandas as pd; df=pd.read_csv('~/kalyan/data/kalyan.csv'); df[['date','jodi']].to_csv('~/MatkaAnalyzerPro/matka_analyzer/data/kalyan.csv',index=False)"
+# Copy kalyan data to MatkaAnalyzerPro (full paths, no tilde)
+"$VENV_PYTHON" -c "
+import pandas as pd
+import sys, os
+sys.path.insert(0, '$PROJECT_DIR/src')
+df = pd.read_csv('$PROJECT_DIR/data/kalyan.csv')
+df[['date','jodi']].to_csv('/home/kishore/MatkaAnalyzerPro/matka_analyzer/data/kalyan.csv', index=False)
+print('Data copy completed')
+"
+
+# Log completion timestamp
+echo "$(date): Daily run completed" >> "$PROJECT_DIR/logs/daily_run.log"
